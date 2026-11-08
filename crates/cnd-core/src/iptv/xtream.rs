@@ -414,6 +414,12 @@ pub async fn sync_xtream_native_catalog(
         started,
     )?;
 
+    // A failed classification must not fail the refresh: the catalogue stays usable and the next
+    // launch reclassifies anything left without a theme.
+    if let Err(e) = db.classify_source(source_id) {
+        telemetry.warn("TAXONOMY", format!("Could not classify source id={source_id}: {e}"));
+    }
+
     telemetry.info(
         "XTREAM",
         format!(
@@ -928,6 +934,10 @@ pub async fn ensure_xtream_series_episodes(
         tx.commit()?;
         Ok(inserted)
     })?;
+
+    if let Err(e) = db.classify_series_episodes(series_db_id) {
+        telemetry.warn("TAXONOMY", format!("Could not classify episodes of series db_id={series_db_id}: {e}"));
+    }
 
     telemetry.info(
         "XTREAM",

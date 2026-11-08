@@ -5,9 +5,13 @@ struct MoviesCatalogView: View {
     @State private var model: VodCatalogModel<IptvItemRecord>
     let revision: Int
     let totalMovies: Int
+    let engine: CndEngine
+    var onCategoriesChanged: () -> Void
     @Environment(VodContext.self) private var vod
 
-    init(engine: CndEngine, revision: Int, totalMovies: Int) {
+    init(engine: CndEngine, revision: Int, totalMovies: Int, onCategoriesChanged: @escaping () -> Void = {}) {
+        self.engine = engine
+        self.onCategoriesChanged = onCategoriesChanged
         _model = State(initialValue: VodCatalogModel(kind: "movie", source: .movies(engine: engine)))
         self.revision = revision
         self.totalMovies = totalMovies
@@ -23,7 +27,9 @@ struct MoviesCatalogView: View {
             titles: VodSectionTitles(resume: "Reprendre", resumeIcon: "play.circle", all: "Tous les films"),
             sortOptions: [.name, .rating, .recentlyAdded, .group, .host],
             searchPrompt: "Rechercher un film",
-            emptyDescription: "Ajoutez une source dans l'onglet Sources pour importer des films."
+            emptyDescription: "Ajoutez une source dans l'onglet Sources pour importer des films.",
+            engine: engine,
+            onCategoriesChanged: onCategoriesChanged
         ) { item, style in
             MoviePosterCard(
                 item: item,

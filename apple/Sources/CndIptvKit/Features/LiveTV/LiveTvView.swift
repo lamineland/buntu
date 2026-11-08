@@ -14,11 +14,15 @@ struct LiveTvView: View {
     var onAddToMultiView: ((IptvItemRecord) -> Void)? = nil
     var onOpenMultiView: (() -> Void)? = nil
     var onStartOver: ((IptvItemRecord, EpgProgramRecord) -> Void)? = nil
+    /// A country, a theme or a correction changed what the catalogue shows (PRD-33).
+    var onCategoriesChanged: () -> Void = {}
     @Binding var searchRequest: String?
 
     @AppStorage("live.viewMode") private var viewModeRaw = LiveViewMode.grid.rawValue
+    @AppStorage("live.categoryAxis") private var axisRaw = CategoryAxis.theme.storageValue
     @State private var mirrorTarget: IptvItemRecord?
     @State private var mirrorList: [IptvItemRecord] = []
+    @State private var correction: TaxonomyCorrectionModel?
     init(
         engine: CndEngine,
         revision: Int,
@@ -32,6 +36,7 @@ struct LiveTvView: View {
         onAddToMultiView: ((IptvItemRecord) -> Void)? = nil,
         onOpenMultiView: (() -> Void)? = nil,
         onStartOver: ((IptvItemRecord, EpgProgramRecord) -> Void)? = nil,
+        onCategoriesChanged: @escaping () -> Void = {},
         searchRequest: Binding<String?> = .constant(nil)
     ) {
         let model = LiveTvModel(engine: engine)
@@ -47,6 +52,7 @@ struct LiveTvView: View {
         self.onAddToMultiView = onAddToMultiView
         self.onOpenMultiView = onOpenMultiView
         self.onStartOver = onStartOver
+        self.onCategoriesChanged = onCategoriesChanged
         _searchRequest = searchRequest
     }
 
@@ -61,7 +67,116 @@ struct LiveTvView: View {
 
     private var viewMode: LiveViewMode { LiveViewMode(rawValue: viewModeRaw) ?? .grid }
 
-    private var reloadKey: String { "\(model.filter.signature)#\(revision)" }
+    private var reloadKey: String { "\(model.filter.signature)#\(revision)#\(axisRaw)" }
+
+    // MARK: Categories by country / theme (PRD-33)
+
+    private var axis: CategoryAxis { CategoryAxis(storageValue: axisRaw, fallback: .theme) }
+
+    private var axisBinding: Binding<CategoryAxis> {
+        Binding(get: { axis }, set: { axisRaw = $0.storageValue })
+    }
+
+    /// Facets are re-read when the axis, the selection or the catalogue changes (not for the search text).
+    private var facetsKey: String {
+        let f = model.filter
+        return "\(axisRaw)|\(f.country ?? "-")|\(f.theme ?? "-")|\(f.subtheme ?? "-")|\(revision)"
+    }
+
+    private var axisPicker: AnyView {
+        AnyView(
+            Picker("Classer par", selection: axisBinding) {
+                ForEach(CategoryAxis.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .accessibilityLabel("Classer les catégories par")
+        )
+    }
+
+    /// Selection of the column, which depends on the axis.
+    private func columnSelection(_ filter: SearchFilterState) -> Binding<String?> {
+        switch axis {
+        case .provider: return Binding(get: { filter.group }, set: { filter.group = $0 })
+        case .country: return countryBinding(filter)
+        case .theme: return themeBinding(filter)
+        }
+    }
+
+    private func countryBinding(_ filter: SearchFilterState) -> Binding<String?> {
+        Binding(get: { filter.country }, set: { filter.country = $0 })
+    }
+
+    /// Changing the theme drops the sub-theme, which belongs to the previous one.
+    private func themeBinding(_ filter: SearchFilterState) -> Binding<String?> {
+        Binding(get: { filter.theme }, set: { filter.theme = $0; filter.subtheme = nil })
+    }
+
+    private func crossSelection(_ filter: SearchFilterState) -> Binding<String?> {
+        axis == .country ? themeBinding(filter) : countryBinding(filter)
+    }
+
+    /// Context menu of a column row: hide a country or theme, or classify a provider category.
+    private func rowMenu(for key: String) -> AnyView {
+        switch axis {
+        case .country:
+            return AnyView(Button("Masquer ce pays", systemImage: "eye.slash") { hide(kind: "country:live", key: key) })
+        case .theme:
+            return AnyView(Button("Masquer ce thème", systemImage: "eye.slash") { hide(kind: "theme:live", key: key) })
+        case .provider:
+            return AnyView(Button("Classer cette catégorie…", systemImage: "globe.europe.africa") {
+                correction = TaxonomyCorrectionModel(engine: model.engine, target: .providerCategory(key))
+            })
+        }
+    }
+
+    /// Hides a country or a theme for the active profile; the bouquet editor shows it again.
+    private func hide(kind: String, key: String) {
+        try? model.engine.hideGroup(profileId: model.engine.activeProfileId(), kind: kind, group: key)
+        if axis == .country, model.filter.country == key { model.filter.country = nil }
+        if axis == .theme, model.filter.theme == key { model.filter.theme = nil; model.filter.subtheme = nil }
+        categoriesChanged()
+    }
+
+    private func categoriesChanged() {
+        onCategoriesChanged()
+        Task {
+            await model.reload(revision: revision)
+            await model.reloadTaxonomyFacets()
+        }
+    }
+
+    /// Chips of the other axis, the optional sub-theme row and the title of the selection.
+    @ViewBuilder
+    private func crossFilters(_ filter: SearchFilterState) -> some View {
+        if let other = axis.other {
+            VStack(alignment: .leading, spacing: 0) {
+                FacetChipsRow(
+                    allTitle: other == .theme ? "Tous les thèmes" : "Tous les pays",
+                    chips: model.crossFacets.map {
+                        FacetChip(key: $0.key, title: CategoryText.label($0.key, axis: other), count: Int($0.count))
+                    },
+                    selection: crossSelection(filter)
+                )
+                if !model.subthemeFacets.isEmpty {
+                    FacetChipsRow(
+                        allTitle: "Tous les sous-thèmes",
+                        chips: model.subthemeFacets.map {
+                            FacetChip(key: $0.value, title: CategoryText.subthemeName($0.value), count: Int($0.count))
+                        },
+                        selection: Binding(get: { filter.subtheme }, set: { filter.subtheme = $0 })
+                    )
+                }
+                if let title = CategoryText.selectionTitle(country: filter.country, theme: filter.theme, subtheme: filter.subtheme) {
+                    Text(title)
+                        .font(.headline)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 4)
+                        .accessibilityAddTraits(.isHeader)
+                }
+            }
+        }
+    }
 
     /// Hands the browsed channel list to the zapper (next/previous channel from anywhere).
     private func publishZapList() {
@@ -91,24 +206,35 @@ struct LiveTvView: View {
                 }
             },
             startOver: onStartOver,
-            showGuide: onShowGuide
+            showGuide: onShowGuide,
+            correctCategory: { item in
+                correction = TaxonomyCorrectionModel(engine: model.engine, target: .channel(stableHash: item.stableHash, name: item.name))
+            }
         )
     }
 
     var body: some View {
         @Bindable var filter = model.filter
+        let axis = self.axis
         return CategoryNavigation(
-            groups: model.groups,
-            totalCount: totalChannels,
+            groups: axis == .provider ? model.groups : CategoryText.asFacetCounts(model.columnFacets),
+            totalCount: axis == .provider ? totalChannels : (model.allCount ?? totalChannels),
             allTitle: "Toutes les chaînes",
-            selection: $filter.group
+            label: { CategoryText.label($0, axis: axis) },
+            icon: { CategoryText.icon($0, axis: axis) },
+            axisPicker: axisPicker,
+            rowMenu: { key in rowMenu(for: key) },
+            selection: columnSelection(model.filter)
         ) {
-            channelContent
+            VStack(spacing: 0) {
+                crossFilters(model.filter)
+                channelContent
+            }
         }
         .navigationTitle("Live TV")
         .searchFilterToolbar(
             state: model.filter,
-            groups: model.groups,
+            groups: axis == .provider ? model.groups : [],
             hosts: model.hosts,
             sortOptions: [.channelNumber, .name, .group, .host],
             prompt: "Rechercher une chaîne"
@@ -136,13 +262,30 @@ struct LiveTvView: View {
                 .pickerStyle(.segmented)
             }
         }
-        .task(id: reloadKey) { await model.reload(revision: revision) }
+        .onChange(of: axisRaw) { _, _ in
+            model.filter.group = nil
+            model.filter.clearTaxonomy()
+        }
+        .task(id: reloadKey) {
+            model.axis = axis
+            await model.reload(revision: revision)
+        }
+        .task(id: facetsKey) {
+            model.axis = axis
+            await model.reloadTaxonomyFacets()
+        }
         .onChange(of: model.channels.count) { _, _ in publishZapList() }
         .onChange(of: model.nowNext.count) { _, _ in publishZapList() }
         .task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(60))
                 model.refreshEpg()
+            }
+        }
+        .sheet(item: $correction) { model in
+            TaxonomyCorrectionSheet(model: model) { changed in
+                correction = nil
+                if changed { categoriesChanged() }
             }
         }
         .sheet(item: Binding(

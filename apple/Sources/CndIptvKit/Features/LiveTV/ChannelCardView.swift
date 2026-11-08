@@ -43,6 +43,8 @@ struct ChannelActions {
     /// Plays the programme on air from its beginning (provider catch-up); shown only when the channel has an archive.
     var startOver: ((IptvItemRecord, EpgProgramRecord) -> Void)? = nil
     var showGuide: (IptvItemRecord) -> Void
+    /// "Changer le pays / le thème…" (PRD-33 § 7).
+    var correctCategory: ((IptvItemRecord) -> Void)? = nil
 }
 
 /// One channel, as a grid card or a list row. Fixed height so lazy grids never reflow.
@@ -239,6 +241,9 @@ struct ChannelCardView: View {
             Button("Alternatives (Miroirs)", systemImage: "arrow.triangle.swap") {
                 showMirrors(item)
             }
+        }
+        if let correctCategory = actions.correctCategory {
+            Button("Changer le pays ou le thème…", systemImage: "globe.europe.africa") { correctCategory(item) }
         }
         if let media = PlayableMedia(item: item) {
             Menu("Ouvrir dans…", systemImage: "arrow.up.forward.app") {

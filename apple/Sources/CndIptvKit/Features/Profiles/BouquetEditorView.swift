@@ -95,6 +95,33 @@ private struct BouquetKindListView: View {
                         }
                     }
 
+                    if !model.hiddenCountries.isEmpty || !model.hiddenThemes.isEmpty {
+                        Section {
+                            ForEach(model.hiddenCountries, id: \.self) { code in
+                                HStack {
+                                    Text(CategoryText.countryLabel(code))
+                                    Spacer()
+                                    Button("Afficher") { model.unhideCountry(code) }
+                                        .buttonStyle(.borderless)
+                                        .accessibilityLabel("Afficher de nouveau \(CategoryText.countryName(code))")
+                                }
+                            }
+                            ForEach(model.hiddenThemes, id: \.self) { theme in
+                                HStack {
+                                    Label(CategoryText.themeName(theme), systemImage: CategoryText.themeIcon(theme))
+                                    Spacer()
+                                    Button("Afficher") { model.unhideTheme(theme) }
+                                        .buttonStyle(.borderless)
+                                        .accessibilityLabel("Afficher de nouveau \(CategoryText.themeName(theme))")
+                                }
+                            }
+                        } header: {
+                            Text("Pays et thèmes masqués")
+                        } footer: {
+                            Text("Masqués depuis la colonne des catégories (clic droit sur un pays ou un thème).")
+                        }
+                    }
+
                     Section {
                         ForEach(model.favoriteFolders, id: \.id) { folder in
                             HStack {

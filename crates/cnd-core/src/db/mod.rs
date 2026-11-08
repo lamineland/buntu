@@ -9,6 +9,7 @@ pub mod recommend_repo;
 pub mod schema;
 pub mod settings_repo;
 pub mod sync_repo;
+pub mod taxonomy_repo;
 
 pub use profile_repo::{is_adult_category, FavoriteFolderRecord, ProfileRecord};
 pub use recording_repo::{NewRecordingRequest, RecordingRecord, SeriesRuleRecord};
@@ -421,12 +422,87 @@ impl DatabaseManager {
                 FOREIGN KEY(playlist_id) REFERENCES library_playlists(id) ON DELETE CASCADE,
                 FOREIGN KEY(item_id) REFERENCES library_items(id) ON DELETE CASCADE
             )",
+            // PRD-33: normalised categories (country + themes of a closed list).
+            "ALTER TABLE iptv_items ADD COLUMN tx_country TEXT",
+            "ALTER TABLE iptv_items ADD COLUMN tx_country_src TEXT",
+            "ALTER TABLE iptv_items ADD COLUMN tx_theme TEXT",
+            "ALTER TABLE series_catalog ADD COLUMN tx_country TEXT",
+            "ALTER TABLE series_catalog ADD COLUMN tx_theme TEXT",
+            "CREATE TABLE IF NOT EXISTS item_themes (
+                item_id INTEGER NOT NULL REFERENCES iptv_items(id) ON DELETE CASCADE,
+                theme TEXT NOT NULL,
+                subtheme TEXT,
+                src TEXT NOT NULL,
+                PRIMARY KEY (item_id, theme)
+            ) WITHOUT ROWID",
+            "CREATE TABLE IF NOT EXISTS taxonomy_overrides (
+                stable_hash TEXT PRIMARY KEY,
+                country TEXT,
+                themes TEXT,
+                updated_at INTEGER NOT NULL
+            )",
+            "CREATE INDEX IF NOT EXISTS idx_items_kind_country_theme ON iptv_items(kind, tx_country, tx_theme, name)",
+            "CREATE INDEX IF NOT EXISTS idx_item_themes_theme ON item_themes(theme, item_id)",
+            "CREATE INDEX IF NOT EXISTS idx_series_country_theme ON series_catalog(tx_country, tx_theme)",
+            // PRD-33 lot 33.4: words of the country and themes, indexed for search; rules per provider category.
+            "ALTER TABLE iptv_items ADD COLUMN tx_terms TEXT",
+            // PRD-33 lot 33.5: genre of a series (sub-theme of its main theme).
+            "ALTER TABLE series_catalog ADD COLUMN tx_subtheme TEXT",
+            "CREATE TABLE IF NOT EXISTS taxonomy_group_overrides (
+                group_key TEXT PRIMARY KEY,
+                country TEXT,
+                themes TEXT,
+                updated_at INTEGER NOT NULL
+            )",
         ];
         for sql in alter_stmts {
             // Ignore duplicate column error on already-migrated databases
             let _ = conn.execute(sql, []);
         }
         Self::scope_user_data_to_profiles(conn)?;
+        Self::upgrade_search_index(conn)?;
+        Ok(())
+    }
+
+    /// PRD-33 lot 33.4: the full-text index also covers the words of a channel's country and themes
+    /// (`tx_terms`). An FTS5 table cannot gain a column, so an index without it is rebuilt once.
+    fn upgrade_search_index(conn: &Connection) -> std::result::Result<(), DbError> {
+        let has_terms: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('iptv_items_fts') WHERE name = 'tx_terms'",
+            [],
+            |r| r.get(0),
+        )?;
+        if has_terms > 0 {
+            return Ok(());
+        }
+        conn.execute_batch(
+            "BEGIN;
+             DROP TRIGGER IF EXISTS trg_items_ai;
+             DROP TRIGGER IF EXISTS trg_items_ad;
+             DROP TRIGGER IF EXISTS trg_items_au;
+             DROP TABLE IF EXISTS iptv_items_fts;
+             CREATE VIRTUAL TABLE iptv_items_fts USING fts5(
+                 name, group_title, tvg_name, tx_terms,
+                 content='iptv_items', content_rowid='id',
+                 tokenize='unicode61 remove_diacritics 2'
+             );
+             CREATE TRIGGER trg_items_ai AFTER INSERT ON iptv_items BEGIN
+                 INSERT INTO iptv_items_fts(rowid, name, group_title, tvg_name, tx_terms)
+                 VALUES (new.id, new.name, new.group_title, new.tvg_name, new.tx_terms);
+             END;
+             CREATE TRIGGER trg_items_ad AFTER DELETE ON iptv_items BEGIN
+                 INSERT INTO iptv_items_fts(iptv_items_fts, rowid, name, group_title, tvg_name, tx_terms)
+                 VALUES ('delete', old.id, old.name, old.group_title, old.tvg_name, old.tx_terms);
+             END;
+             CREATE TRIGGER trg_items_au AFTER UPDATE ON iptv_items BEGIN
+                 INSERT INTO iptv_items_fts(iptv_items_fts, rowid, name, group_title, tvg_name, tx_terms)
+                 VALUES ('delete', old.id, old.name, old.group_title, old.tvg_name, old.tx_terms);
+                 INSERT INTO iptv_items_fts(rowid, name, group_title, tvg_name, tx_terms)
+                 VALUES (new.id, new.name, new.group_title, new.tvg_name, new.tx_terms);
+             END;
+             INSERT INTO iptv_items_fts(iptv_items_fts) VALUES ('rebuild');
+             COMMIT;",
+        )?;
         Ok(())
     }
 

@@ -50,9 +50,14 @@ struct VodCatalogView<Entry: CatalogEntry, Card: View>: View {
     let sortOptions: [SortField]
     let searchPrompt: String
     let emptyDescription: String
+    /// Lets a provider category be classified by hand (PRD-33 lot 33.5); `nil` hides that menu.
+    var engine: CndEngine?
+    var onCategoriesChanged: () -> Void
     @ViewBuilder let card: (Entry, VodCardStyle) -> Card
 
     @AppStorage private var viewModeRaw: String
+    @AppStorage private var axisRaw: String
+    @State private var correction: TaxonomyCorrectionModel?
 
     init(
         title: String,
@@ -64,6 +69,8 @@ struct VodCatalogView<Entry: CatalogEntry, Card: View>: View {
         sortOptions: [SortField],
         searchPrompt: String,
         emptyDescription: String,
+        engine: CndEngine? = nil,
+        onCategoriesChanged: @escaping () -> Void = {},
         @ViewBuilder card: @escaping (Entry, VodCardStyle) -> Card
     ) {
         self.title = title
@@ -74,21 +81,117 @@ struct VodCatalogView<Entry: CatalogEntry, Card: View>: View {
         self.sortOptions = sortOptions
         self.searchPrompt = searchPrompt
         self.emptyDescription = emptyDescription
+        self.engine = engine
+        self.onCategoriesChanged = onCategoriesChanged
         self.card = card
         _viewModeRaw = AppStorage(wrappedValue: LiveViewMode.grid.rawValue, viewModeKey)
+        _axisRaw = AppStorage(
+            wrappedValue: CategoryAxis.theme.storageValue,
+            viewModeKey.replacingOccurrences(of: "viewMode", with: "categoryAxis")
+        )
     }
 
     private var viewMode: LiveViewMode { LiveViewMode(rawValue: viewModeRaw) ?? .grid }
-    private var reloadKey: String { "\(model.filter.signature)#\(revision)" }
+    private var reloadKey: String { "\(model.filter.signature)#\(revision)#\(axisRaw)" }
+
+    // MARK: Categories by country / genre (PRD-33 lot 33.5)
+
+    private var axis: CategoryAxis { CategoryAxis(storageValue: axisRaw, fallback: .theme) }
+
+    private var facetsKey: String {
+        let f = model.filter
+        return "\(axisRaw)|\(f.country ?? "-")|\(f.theme ?? "-")|\(f.subtheme ?? "-")|\(revision)"
+    }
+
+    private var axisPicker: AnyView {
+        AnyView(
+            Picker("Classer par", selection: Binding(get: { axis }, set: { axisRaw = $0.storageValue })) {
+                ForEach(CategoryAxis.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .accessibilityLabel("Classer les catégories par")
+        )
+    }
+
+    private func countryBinding(_ filter: SearchFilterState) -> Binding<String?> {
+        Binding(get: { filter.country }, set: { filter.country = $0 })
+    }
+
+    /// Changing the theme drops the genre, which belongs to the previous one.
+    private func themeBinding(_ filter: SearchFilterState) -> Binding<String?> {
+        Binding(get: { filter.theme }, set: { filter.theme = $0; filter.subtheme = nil })
+    }
+
+    private func columnSelection(_ filter: SearchFilterState) -> Binding<String?> {
+        switch axis {
+        case .provider: return Binding(get: { filter.group }, set: { filter.group = $0 })
+        case .country: return countryBinding(filter)
+        case .theme: return themeBinding(filter)
+        }
+    }
+
+    private func rowMenu(for key: String) -> AnyView {
+        guard axis == .provider, let engine else { return AnyView(EmptyView()) }
+        return AnyView(Button("Classer cette catégorie…", systemImage: "globe.europe.africa") {
+            correction = TaxonomyCorrectionModel(engine: engine, target: .providerCategory(key))
+        })
+    }
+
+    private func categoriesChanged() {
+        onCategoriesChanged()
+        Task {
+            await model.reload(revision: revision)
+            await model.reloadTaxonomyFacets()
+        }
+    }
+
+    @ViewBuilder
+    private func crossFilters(_ filter: SearchFilterState) -> some View {
+        if let other = axis.other {
+            VStack(alignment: .leading, spacing: 0) {
+                FacetChipsRow(
+                    allTitle: other == .theme ? "Tous les genres" : "Tous les pays",
+                    chips: model.crossFacets.map {
+                        FacetChip(key: $0.key, title: CategoryText.label($0.key, axis: other), count: Int($0.count))
+                    },
+                    selection: axis == .country ? themeBinding(filter) : countryBinding(filter)
+                )
+                if !model.subthemeFacets.isEmpty {
+                    FacetChipsRow(
+                        allTitle: "Tous les genres",
+                        chips: model.subthemeFacets.map {
+                            FacetChip(key: $0.value, title: CategoryText.subthemeName($0.value), count: Int($0.count))
+                        },
+                        selection: Binding(get: { filter.subtheme }, set: { filter.subtheme = $0 })
+                    )
+                }
+                if let title = CategoryText.selectionTitle(country: filter.country, theme: filter.theme, subtheme: filter.subtheme) {
+                    Text(title)
+                        .font(.headline)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 4)
+                        .accessibilityAddTraits(.isHeader)
+                }
+            }
+        }
+    }
 
     var body: some View {
-        @Bindable var filter = model.filter
+        let axis = self.axis
         return CategoryNavigation(
-            groups: model.groups,
-            totalCount: totalCount,
-            selection: $filter.group
+            groups: axis == .provider ? model.groups : CategoryText.asFacetCounts(model.columnFacets),
+            totalCount: axis == .provider ? totalCount : (model.allCount ?? totalCount),
+            label: { CategoryText.label($0, axis: axis) },
+            icon: { CategoryText.icon($0, axis: axis) },
+            axisPicker: axisPicker,
+            rowMenu: engine == nil ? nil : { key in rowMenu(for: key) },
+            selection: columnSelection(model.filter)
         ) {
-            content
+            VStack(spacing: 0) {
+                crossFilters(model.filter)
+                content
+            }
         }
         .navigationTitle(title)
         .searchFilterToolbar(
@@ -106,7 +209,24 @@ struct VodCatalogView<Entry: CatalogEntry, Card: View>: View {
                 .pickerStyle(.segmented)
             }
         }
-        .task(id: reloadKey) { await model.reload(revision: revision) }
+        .onChange(of: axisRaw) { _, _ in
+            model.filter.group = nil
+            model.filter.clearTaxonomy()
+        }
+        .task(id: reloadKey) {
+            model.axis = axis
+            await model.reload(revision: revision)
+        }
+        .task(id: facetsKey) {
+            model.axis = axis
+            await model.reloadTaxonomyFacets()
+        }
+        .sheet(item: $correction) { model in
+            TaxonomyCorrectionSheet(model: model) { changed in
+                correction = nil
+                if changed { categoriesChanged() }
+            }
+        }
     }
 
     @ViewBuilder

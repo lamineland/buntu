@@ -611,6 +611,10 @@ public protocol CndEngineProtocol: AnyObject, Sendable {
     
     func clearLogs() 
     
+    func clearTaxonomyGroupOverride(groupTitle: String) throws 
+    
+    func clearTaxonomyOverride(stableHash: String) throws 
+    
     func computeFileMoviehash(filePath: String) throws  -> String
     
     /**
@@ -660,6 +664,12 @@ public protocol CndEngineProtocol: AnyObject, Sendable {
     
     func findMirrors(itemId: Int64) throws  -> [IptvItemRecord]
     
+    /**
+     * Entries of the category column for one axis, narrowed by the other axis (PRD-33).
+     * `kind` is `live`, `movie` or `series`.
+     */
+    func getCategoryFacets(kind: String, axis: CategoryAxis, sourceId: Int64?, filter: TaxonomyFilter) throws  -> [CategoryFacet]
+    
     func getChannelEpg(tvgId: String, fromTs: Int64, toTs: Int64) throws  -> [EpgProgramRecord]
     
     func getDownloadLogs(taskId: Int64, limit: UInt32) throws  -> [DownloadLogRecord]
@@ -673,6 +683,11 @@ public protocol CndEngineProtocol: AnyObject, Sendable {
     func getHosts(kind: String, sourceId: Int64?) throws  -> [FacetCount]
     
     func getItemById(itemId: Int64) throws  -> IptvItemRecord?
+    
+    /**
+     * Country and themes of an item as stored, and whether a correction or a category rule applies.
+     */
+    func getItemTaxonomy(stableHash: String) throws  -> ItemTaxonomy?
     
     func getLogsSince(afterSeqId: UInt64, limit: UInt32)  -> [NetworkLogEntry]
     
@@ -691,6 +706,10 @@ public protocol CndEngineProtocol: AnyObject, Sendable {
     func getStreamHealth(stableHash: String) throws  -> StreamHealthRecord?
     
     func getStreamHealthBatch(hashes: [String]) throws  -> [StreamHealthRecord]
+    
+    func getTaxonomyGroupOverride(groupTitle: String) throws  -> TaxonomyCorrection?
+    
+    func getTaxonomyOverride(stableHash: String) throws  -> TaxonomyCorrection?
     
     func hideGroup(profileId: Int64, kind: String, group: String) throws 
     
@@ -715,6 +734,11 @@ public protocol CndEngineProtocol: AnyObject, Sendable {
     func isCatchupAvailable(itemId: Int64, startTs: Int64) throws  -> Bool
     
     func isHealthCheckRunning()  -> Bool
+    
+    /**
+     * True while the catalogue is being reclassified after an update of the rules.
+     */
+    func isReclassifyingCategories()  -> Bool
     
     func libraryAddFolder(displayName: String, path: String, bookmark: Data?, includeSubfolders: Bool, kinds: String) throws  -> LibraryFolderRecord
     
@@ -805,9 +829,19 @@ public protocol CndEngineProtocol: AnyObject, Sendable {
     
     func queryCatalog(filter: CatalogFilter) throws  -> [IptvItemRecord]
     
+    /**
+     * `query_catalog` restricted to a country and / or a theme (PRD-33).
+     */
+    func queryCatalogByTaxonomy(filter: CatalogFilter, taxonomy: TaxonomyFilter) throws  -> [IptvItemRecord]
+    
     func queryItems(kind: String, query: String, group: String?, host: String?, limit: UInt32, offset: UInt32) throws  -> [IptvItemRecord]
     
     func querySeries(filter: CatalogFilter) throws  -> [SeriesRecord]
+    
+    /**
+     * `query_series` restricted to a country and / or a main theme (PRD-33).
+     */
+    func querySeriesByTaxonomy(filter: CatalogFilter, taxonomy: TaxonomyFilter) throws  -> [SeriesRecord]
     
     func recommendationsFor(itemId: Int64, context: RecommendationContext, limit: UInt32) throws  -> [Recommendation]
     
@@ -828,6 +862,11 @@ public protocol CndEngineProtocol: AnyObject, Sendable {
     func removeSeriesRule(id: Int64) throws  -> Bool
     
     func resetDismissedRecommendations() throws 
+    
+    /**
+     * Forgets every correction; returns how many were removed.
+     */
+    func resetTaxonomyOverrides() throws  -> UInt32
     
     func resolveCatchupUrl(streamUrl: String, catchupType: String?, catchupSource: String?, catchupDays: UInt32?, startTs: Int64, endTs: Int64) throws  -> String?
     
@@ -856,6 +895,16 @@ public protocol CndEngineProtocol: AnyObject, Sendable {
     
     func setRecordingDirectory(dir: String) 
     
+    /**
+     * Classifies every item of a provider category the same way (PRD-33 § 7).
+     */
+    func setTaxonomyGroupOverride(groupTitle: String, country: String?, themes: [String]?) throws 
+    
+    /**
+     * Corrects the country and / or the themes of one item (PRD-33 § 7). `None` keeps the computed value.
+     */
+    func setTaxonomyOverride(stableHash: String, country: String?, themes: [String]?) throws 
+    
     func startAllDownloads() async throws 
     
     func startDownload(taskId: Int64) async throws 
@@ -872,6 +921,10 @@ public protocol CndEngineProtocol: AnyObject, Sendable {
     func subtitlesSignOut() 
     
     func subtitlesSignedIn()  -> Bool
+    
+    func taxonomyOverrideSummary() throws  -> TaxonomyOverrideSummary
+    
+    func taxonomyStatus() throws  -> TaxonomyStatus
     
     func toggleBroken(stableHash: String, itemKind: String) throws  -> Bool
     
@@ -1072,6 +1125,20 @@ open func cancelRecording(id: Int64)throws  -> Bool  {
     
 open func clearLogs()  {try! rustCall() {
     uniffi_cnd_core_fn_method_cndengine_clear_logs(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+open func clearTaxonomyGroupOverride(groupTitle: String)throws   {try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_clear_taxonomy_group_override(self.uniffiClonePointer(),
+        FfiConverterString.lower(groupTitle),$0
+    )
+}
+}
+    
+open func clearTaxonomyOverride(stableHash: String)throws   {try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_clear_taxonomy_override(self.uniffiClonePointer(),
+        FfiConverterString.lower(stableHash),$0
     )
 }
 }
@@ -1294,6 +1361,21 @@ open func findMirrors(itemId: Int64)throws  -> [IptvItemRecord]  {
 })
 }
     
+    /**
+     * Entries of the category column for one axis, narrowed by the other axis (PRD-33).
+     * `kind` is `live`, `movie` or `series`.
+     */
+open func getCategoryFacets(kind: String, axis: CategoryAxis, sourceId: Int64?, filter: TaxonomyFilter)throws  -> [CategoryFacet]  {
+    return try  FfiConverterSequenceTypeCategoryFacet.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_get_category_facets(self.uniffiClonePointer(),
+        FfiConverterString.lower(kind),
+        FfiConverterTypeCategoryAxis_lower(axis),
+        FfiConverterOptionInt64.lower(sourceId),
+        FfiConverterTypeTaxonomyFilter_lower(filter),$0
+    )
+})
+}
+    
 open func getChannelEpg(tvgId: String, fromTs: Int64, toTs: Int64)throws  -> [EpgProgramRecord]  {
     return try  FfiConverterSequenceTypeEpgProgramRecord.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
     uniffi_cnd_core_fn_method_cndengine_get_channel_epg(self.uniffiClonePointer(),
@@ -1353,6 +1435,17 @@ open func getItemById(itemId: Int64)throws  -> IptvItemRecord?  {
     return try  FfiConverterOptionTypeIptvItemRecord.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
     uniffi_cnd_core_fn_method_cndengine_get_item_by_id(self.uniffiClonePointer(),
         FfiConverterInt64.lower(itemId),$0
+    )
+})
+}
+    
+    /**
+     * Country and themes of an item as stored, and whether a correction or a category rule applies.
+     */
+open func getItemTaxonomy(stableHash: String)throws  -> ItemTaxonomy?  {
+    return try  FfiConverterOptionTypeItemTaxonomy.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_get_item_taxonomy(self.uniffiClonePointer(),
+        FfiConverterString.lower(stableHash),$0
     )
 })
 }
@@ -1425,6 +1518,22 @@ open func getStreamHealthBatch(hashes: [String])throws  -> [StreamHealthRecord] 
     return try  FfiConverterSequenceTypeStreamHealthRecord.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
     uniffi_cnd_core_fn_method_cndengine_get_stream_health_batch(self.uniffiClonePointer(),
         FfiConverterSequenceString.lower(hashes),$0
+    )
+})
+}
+    
+open func getTaxonomyGroupOverride(groupTitle: String)throws  -> TaxonomyCorrection?  {
+    return try  FfiConverterOptionTypeTaxonomyCorrection.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_get_taxonomy_group_override(self.uniffiClonePointer(),
+        FfiConverterString.lower(groupTitle),$0
+    )
+})
+}
+    
+open func getTaxonomyOverride(stableHash: String)throws  -> TaxonomyCorrection?  {
+    return try  FfiConverterOptionTypeTaxonomyCorrection.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_get_taxonomy_override(self.uniffiClonePointer(),
+        FfiConverterString.lower(stableHash),$0
     )
 })
 }
@@ -1515,6 +1624,16 @@ open func isCatchupAvailable(itemId: Int64, startTs: Int64)throws  -> Bool  {
 open func isHealthCheckRunning() -> Bool  {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_cnd_core_fn_method_cndengine_is_health_check_running(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * True while the catalogue is being reclassified after an update of the rules.
+     */
+open func isReclassifyingCategories() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_cnd_core_fn_method_cndengine_is_reclassifying_categories(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -1905,6 +2024,18 @@ open func queryCatalog(filter: CatalogFilter)throws  -> [IptvItemRecord]  {
 })
 }
     
+    /**
+     * `query_catalog` restricted to a country and / or a theme (PRD-33).
+     */
+open func queryCatalogByTaxonomy(filter: CatalogFilter, taxonomy: TaxonomyFilter)throws  -> [IptvItemRecord]  {
+    return try  FfiConverterSequenceTypeIptvItemRecord.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_query_catalog_by_taxonomy(self.uniffiClonePointer(),
+        FfiConverterTypeCatalogFilter_lower(filter),
+        FfiConverterTypeTaxonomyFilter_lower(taxonomy),$0
+    )
+})
+}
+    
 open func queryItems(kind: String, query: String, group: String?, host: String?, limit: UInt32, offset: UInt32)throws  -> [IptvItemRecord]  {
     return try  FfiConverterSequenceTypeIptvItemRecord.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
     uniffi_cnd_core_fn_method_cndengine_query_items(self.uniffiClonePointer(),
@@ -1922,6 +2053,18 @@ open func querySeries(filter: CatalogFilter)throws  -> [SeriesRecord]  {
     return try  FfiConverterSequenceTypeSeriesRecord.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
     uniffi_cnd_core_fn_method_cndengine_query_series(self.uniffiClonePointer(),
         FfiConverterTypeCatalogFilter_lower(filter),$0
+    )
+})
+}
+    
+    /**
+     * `query_series` restricted to a country and / or a main theme (PRD-33).
+     */
+open func querySeriesByTaxonomy(filter: CatalogFilter, taxonomy: TaxonomyFilter)throws  -> [SeriesRecord]  {
+    return try  FfiConverterSequenceTypeSeriesRecord.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_query_series_by_taxonomy(self.uniffiClonePointer(),
+        FfiConverterTypeCatalogFilter_lower(filter),
+        FfiConverterTypeTaxonomyFilter_lower(taxonomy),$0
     )
 })
 }
@@ -2043,6 +2186,16 @@ open func resetDismissedRecommendations()throws   {try rustCallWithError(FfiConv
     uniffi_cnd_core_fn_method_cndengine_reset_dismissed_recommendations(self.uniffiClonePointer(),$0
     )
 }
+}
+    
+    /**
+     * Forgets every correction; returns how many were removed.
+     */
+open func resetTaxonomyOverrides()throws  -> UInt32  {
+    return try  FfiConverterUInt32.lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_reset_taxonomy_overrides(self.uniffiClonePointer(),$0
+    )
+})
 }
     
 open func resolveCatchupUrl(streamUrl: String, catchupType: String?, catchupSource: String?, catchupDays: UInt32?, startTs: Int64, endTs: Int64)throws  -> String?  {
@@ -2186,6 +2339,30 @@ open func setRecordingDirectory(dir: String)  {try! rustCall() {
 }
 }
     
+    /**
+     * Classifies every item of a provider category the same way (PRD-33 § 7).
+     */
+open func setTaxonomyGroupOverride(groupTitle: String, country: String?, themes: [String]?)throws   {try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_set_taxonomy_group_override(self.uniffiClonePointer(),
+        FfiConverterString.lower(groupTitle),
+        FfiConverterOptionString.lower(country),
+        FfiConverterOptionSequenceString.lower(themes),$0
+    )
+}
+}
+    
+    /**
+     * Corrects the country and / or the themes of one item (PRD-33 § 7). `None` keeps the computed value.
+     */
+open func setTaxonomyOverride(stableHash: String, country: String?, themes: [String]?)throws   {try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_set_taxonomy_override(self.uniffiClonePointer(),
+        FfiConverterString.lower(stableHash),
+        FfiConverterOptionString.lower(country),
+        FfiConverterOptionSequenceString.lower(themes),$0
+    )
+}
+}
+    
 open func startAllDownloads()async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -2262,6 +2439,20 @@ open func subtitlesSignOut()  {try! rustCall() {
 open func subtitlesSignedIn() -> Bool  {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_cnd_core_fn_method_cndengine_subtitles_signed_in(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func taxonomyOverrideSummary()throws  -> TaxonomyOverrideSummary  {
+    return try  FfiConverterTypeTaxonomyOverrideSummary_lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_taxonomy_override_summary(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func taxonomyStatus()throws  -> TaxonomyStatus  {
+    return try  FfiConverterTypeTaxonomyStatus_lift(try rustCallWithError(FfiConverterTypeCndError_lift) {
+    uniffi_cnd_core_fn_method_cndengine_taxonomy_status(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -2983,6 +3174,99 @@ public func FfiConverterTypeCatalogFilter_lift(_ buf: RustBuffer) throws -> Cata
 #endif
 public func FfiConverterTypeCatalogFilter_lower(_ value: CatalogFilter) -> RustBuffer {
     return FfiConverterTypeCatalogFilter.lower(value)
+}
+
+
+/**
+ * One entry of the category column: a country, a theme or a provider category.
+ */
+public struct CategoryFacet {
+    /**
+     * `FR` / `INT` / `` (unknown country), a theme id, or the raw provider label.
+     */
+    public var key: String
+    public var count: UInt32
+    /**
+     * Sub-themes of a theme (axis `Theme`, live and movies only).
+     */
+    public var subkeys: [FacetCount]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * `FR` / `INT` / `` (unknown country), a theme id, or the raw provider label.
+         */key: String, count: UInt32, 
+        /**
+         * Sub-themes of a theme (axis `Theme`, live and movies only).
+         */subkeys: [FacetCount]) {
+        self.key = key
+        self.count = count
+        self.subkeys = subkeys
+    }
+}
+
+#if compiler(>=6)
+extension CategoryFacet: Sendable {}
+#endif
+
+
+extension CategoryFacet: Equatable, Hashable {
+    public static func ==(lhs: CategoryFacet, rhs: CategoryFacet) -> Bool {
+        if lhs.key != rhs.key {
+            return false
+        }
+        if lhs.count != rhs.count {
+            return false
+        }
+        if lhs.subkeys != rhs.subkeys {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(key)
+        hasher.combine(count)
+        hasher.combine(subkeys)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCategoryFacet: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CategoryFacet {
+        return
+            try CategoryFacet(
+                key: FfiConverterString.read(from: &buf), 
+                count: FfiConverterUInt32.read(from: &buf), 
+                subkeys: FfiConverterSequenceTypeFacetCount.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CategoryFacet, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.key, into: &buf)
+        FfiConverterUInt32.write(value.count, into: &buf)
+        FfiConverterSequenceTypeFacetCount.write(value.subkeys, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCategoryFacet_lift(_ buf: RustBuffer) throws -> CategoryFacet {
+    return try FfiConverterTypeCategoryFacet.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCategoryFacet_lower(_ value: CategoryFacet) -> RustBuffer {
+    return FfiConverterTypeCategoryFacet.lower(value)
 }
 
 
@@ -4291,6 +4575,113 @@ public func FfiConverterTypeIptvSourceRecord_lift(_ buf: RustBuffer) throws -> I
 #endif
 public func FfiConverterTypeIptvSourceRecord_lower(_ value: IptvSourceRecord) -> RustBuffer {
     return FfiConverterTypeIptvSourceRecord.lower(value)
+}
+
+
+/**
+ * What the classifier decided for one item, and whether the user corrected it.
+ */
+public struct ItemTaxonomy {
+    /**
+     * ISO code, `INT`, or `None` when unknown.
+     */
+    public var country: String?
+    public var themes: [String]
+    /**
+     * The item has its own correction.
+     */
+    public var corrected: Bool
+    /**
+     * A rule on its provider category applies to it.
+     */
+    public var categoryRule: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * ISO code, `INT`, or `None` when unknown.
+         */country: String?, themes: [String], 
+        /**
+         * The item has its own correction.
+         */corrected: Bool, 
+        /**
+         * A rule on its provider category applies to it.
+         */categoryRule: Bool) {
+        self.country = country
+        self.themes = themes
+        self.corrected = corrected
+        self.categoryRule = categoryRule
+    }
+}
+
+#if compiler(>=6)
+extension ItemTaxonomy: Sendable {}
+#endif
+
+
+extension ItemTaxonomy: Equatable, Hashable {
+    public static func ==(lhs: ItemTaxonomy, rhs: ItemTaxonomy) -> Bool {
+        if lhs.country != rhs.country {
+            return false
+        }
+        if lhs.themes != rhs.themes {
+            return false
+        }
+        if lhs.corrected != rhs.corrected {
+            return false
+        }
+        if lhs.categoryRule != rhs.categoryRule {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(country)
+        hasher.combine(themes)
+        hasher.combine(corrected)
+        hasher.combine(categoryRule)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeItemTaxonomy: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ItemTaxonomy {
+        return
+            try ItemTaxonomy(
+                country: FfiConverterOptionString.read(from: &buf), 
+                themes: FfiConverterSequenceString.read(from: &buf), 
+                corrected: FfiConverterBool.read(from: &buf), 
+                categoryRule: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ItemTaxonomy, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.country, into: &buf)
+        FfiConverterSequenceString.write(value.themes, into: &buf)
+        FfiConverterBool.write(value.corrected, into: &buf)
+        FfiConverterBool.write(value.categoryRule, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeItemTaxonomy_lift(_ buf: RustBuffer) throws -> ItemTaxonomy {
+    return try FfiConverterTypeItemTaxonomy.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeItemTaxonomy_lower(_ value: ItemTaxonomy) -> RustBuffer {
+    return FfiConverterTypeItemTaxonomy.lower(value)
 }
 
 
@@ -9134,6 +9525,339 @@ public func FfiConverterTypeSyncWatchProgress_lower(_ value: SyncWatchProgress) 
 }
 
 
+/**
+ * A correction as stored: `None` keeps the computed value.
+ */
+public struct TaxonomyCorrection {
+    public var country: String?
+    public var themes: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(country: String?, themes: [String]) {
+        self.country = country
+        self.themes = themes
+    }
+}
+
+#if compiler(>=6)
+extension TaxonomyCorrection: Sendable {}
+#endif
+
+
+extension TaxonomyCorrection: Equatable, Hashable {
+    public static func ==(lhs: TaxonomyCorrection, rhs: TaxonomyCorrection) -> Bool {
+        if lhs.country != rhs.country {
+            return false
+        }
+        if lhs.themes != rhs.themes {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(country)
+        hasher.combine(themes)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTaxonomyCorrection: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TaxonomyCorrection {
+        return
+            try TaxonomyCorrection(
+                country: FfiConverterOptionString.read(from: &buf), 
+                themes: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TaxonomyCorrection, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.country, into: &buf)
+        FfiConverterSequenceString.write(value.themes, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTaxonomyCorrection_lift(_ buf: RustBuffer) throws -> TaxonomyCorrection {
+    return try FfiConverterTypeTaxonomyCorrection.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTaxonomyCorrection_lower(_ value: TaxonomyCorrection) -> RustBuffer {
+    return FfiConverterTypeTaxonomyCorrection.lower(value)
+}
+
+
+/**
+ * Country and theme restrictions added to a catalogue query (PRD-33 § 5.4). All `None` = no filter.
+ */
+public struct TaxonomyFilter {
+    /**
+     * ISO code, `INT`, or an empty string for "country unknown".
+     */
+    public var country: String?
+    public var theme: String?
+    /**
+     * Only with `theme`. A series keeps the sub-theme of its main theme (its genre).
+     */
+    public var subtheme: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * ISO code, `INT`, or an empty string for "country unknown".
+         */country: String?, theme: String?, 
+        /**
+         * Only with `theme`. A series keeps the sub-theme of its main theme (its genre).
+         */subtheme: String?) {
+        self.country = country
+        self.theme = theme
+        self.subtheme = subtheme
+    }
+}
+
+#if compiler(>=6)
+extension TaxonomyFilter: Sendable {}
+#endif
+
+
+extension TaxonomyFilter: Equatable, Hashable {
+    public static func ==(lhs: TaxonomyFilter, rhs: TaxonomyFilter) -> Bool {
+        if lhs.country != rhs.country {
+            return false
+        }
+        if lhs.theme != rhs.theme {
+            return false
+        }
+        if lhs.subtheme != rhs.subtheme {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(country)
+        hasher.combine(theme)
+        hasher.combine(subtheme)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTaxonomyFilter: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TaxonomyFilter {
+        return
+            try TaxonomyFilter(
+                country: FfiConverterOptionString.read(from: &buf), 
+                theme: FfiConverterOptionString.read(from: &buf), 
+                subtheme: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TaxonomyFilter, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.country, into: &buf)
+        FfiConverterOptionString.write(value.theme, into: &buf)
+        FfiConverterOptionString.write(value.subtheme, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTaxonomyFilter_lift(_ buf: RustBuffer) throws -> TaxonomyFilter {
+    return try FfiConverterTypeTaxonomyFilter.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTaxonomyFilter_lower(_ value: TaxonomyFilter) -> RustBuffer {
+    return FfiConverterTypeTaxonomyFilter.lower(value)
+}
+
+
+/**
+ * Corrections made by the user (PRD-33 § 7).
+ */
+public struct TaxonomyOverrideSummary {
+    public var items: UInt32
+    public var groups: UInt32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(items: UInt32, groups: UInt32) {
+        self.items = items
+        self.groups = groups
+    }
+}
+
+#if compiler(>=6)
+extension TaxonomyOverrideSummary: Sendable {}
+#endif
+
+
+extension TaxonomyOverrideSummary: Equatable, Hashable {
+    public static func ==(lhs: TaxonomyOverrideSummary, rhs: TaxonomyOverrideSummary) -> Bool {
+        if lhs.items != rhs.items {
+            return false
+        }
+        if lhs.groups != rhs.groups {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(items)
+        hasher.combine(groups)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTaxonomyOverrideSummary: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TaxonomyOverrideSummary {
+        return
+            try TaxonomyOverrideSummary(
+                items: FfiConverterUInt32.read(from: &buf), 
+                groups: FfiConverterUInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TaxonomyOverrideSummary, into buf: inout [UInt8]) {
+        FfiConverterUInt32.write(value.items, into: &buf)
+        FfiConverterUInt32.write(value.groups, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTaxonomyOverrideSummary_lift(_ buf: RustBuffer) throws -> TaxonomyOverrideSummary {
+    return try FfiConverterTypeTaxonomyOverrideSummary.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTaxonomyOverrideSummary_lower(_ value: TaxonomyOverrideSummary) -> RustBuffer {
+    return FfiConverterTypeTaxonomyOverrideSummary.lower(value)
+}
+
+
+public struct TaxonomyStatus {
+    public var version: UInt32
+    public var storedVersion: UInt32
+    public var liveTotal: UInt32
+    public var liveWithoutCountry: UInt32
+    public var liveWithoutTheme: UInt32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(version: UInt32, storedVersion: UInt32, liveTotal: UInt32, liveWithoutCountry: UInt32, liveWithoutTheme: UInt32) {
+        self.version = version
+        self.storedVersion = storedVersion
+        self.liveTotal = liveTotal
+        self.liveWithoutCountry = liveWithoutCountry
+        self.liveWithoutTheme = liveWithoutTheme
+    }
+}
+
+#if compiler(>=6)
+extension TaxonomyStatus: Sendable {}
+#endif
+
+
+extension TaxonomyStatus: Equatable, Hashable {
+    public static func ==(lhs: TaxonomyStatus, rhs: TaxonomyStatus) -> Bool {
+        if lhs.version != rhs.version {
+            return false
+        }
+        if lhs.storedVersion != rhs.storedVersion {
+            return false
+        }
+        if lhs.liveTotal != rhs.liveTotal {
+            return false
+        }
+        if lhs.liveWithoutCountry != rhs.liveWithoutCountry {
+            return false
+        }
+        if lhs.liveWithoutTheme != rhs.liveWithoutTheme {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(version)
+        hasher.combine(storedVersion)
+        hasher.combine(liveTotal)
+        hasher.combine(liveWithoutCountry)
+        hasher.combine(liveWithoutTheme)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTaxonomyStatus: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TaxonomyStatus {
+        return
+            try TaxonomyStatus(
+                version: FfiConverterUInt32.read(from: &buf), 
+                storedVersion: FfiConverterUInt32.read(from: &buf), 
+                liveTotal: FfiConverterUInt32.read(from: &buf), 
+                liveWithoutCountry: FfiConverterUInt32.read(from: &buf), 
+                liveWithoutTheme: FfiConverterUInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TaxonomyStatus, into buf: inout [UInt8]) {
+        FfiConverterUInt32.write(value.version, into: &buf)
+        FfiConverterUInt32.write(value.storedVersion, into: &buf)
+        FfiConverterUInt32.write(value.liveTotal, into: &buf)
+        FfiConverterUInt32.write(value.liveWithoutCountry, into: &buf)
+        FfiConverterUInt32.write(value.liveWithoutTheme, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTaxonomyStatus_lift(_ buf: RustBuffer) throws -> TaxonomyStatus {
+    return try FfiConverterTypeTaxonomyStatus.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTaxonomyStatus_lower(_ value: TaxonomyStatus) -> RustBuffer {
+    return FfiConverterTypeTaxonomyStatus.lower(value)
+}
+
+
 public struct XtreamAccountInfo {
     public var status: String
     public var expDateTs: Int64?
@@ -9452,6 +10176,83 @@ public func FfiConverterTypeAiProviderKind_lower(_ value: AiProviderKind) -> Rus
 
 
 extension AiProviderKind: Equatable, Hashable {}
+
+
+
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum CategoryAxis {
+    
+    case country
+    case theme
+    case provider
+}
+
+
+#if compiler(>=6)
+extension CategoryAxis: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCategoryAxis: FfiConverterRustBuffer {
+    typealias SwiftType = CategoryAxis
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CategoryAxis {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .country
+        
+        case 2: return .theme
+        
+        case 3: return .provider
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: CategoryAxis, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .country:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .theme:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .provider:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCategoryAxis_lift(_ buf: RustBuffer) throws -> CategoryAxis {
+    return try FfiConverterTypeCategoryAxis.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCategoryAxis_lower(_ value: CategoryAxis) -> RustBuffer {
+    return FfiConverterTypeCategoryAxis.lower(value)
+}
+
+
+extension CategoryAxis: Equatable, Hashable {}
 
 
 
@@ -10344,6 +11145,30 @@ fileprivate struct FfiConverterOptionTypeIptvItemRecord: FfiConverterRustBuffer 
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeItemTaxonomy: FfiConverterRustBuffer {
+    typealias SwiftType = ItemTaxonomy?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeItemTaxonomy.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeItemTaxonomy.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeLibraryFolderRecord: FfiConverterRustBuffer {
     typealias SwiftType = LibraryFolderRecord?
 
@@ -10584,6 +11409,54 @@ fileprivate struct FfiConverterOptionTypeStreamHealthRecord: FfiConverterRustBuf
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeTaxonomyCorrection: FfiConverterRustBuffer {
+    typealias SwiftType = TaxonomyCorrection?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeTaxonomyCorrection.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeTaxonomyCorrection.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceInt64: FfiConverterRustBuffer {
     typealias SwiftType = [Int64]
 
@@ -10626,6 +11499,31 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeCategoryFacet: FfiConverterRustBuffer {
+    typealias SwiftType = [CategoryFacet]
+
+    public static func write(_ value: [CategoryFacet], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeCategoryFacet.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [CategoryFacet] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [CategoryFacet]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeCategoryFacet.read(from: &buf))
         }
         return seq
     }
@@ -11606,6 +12504,12 @@ private let initializationResult: InitializationResult = {
     if (uniffi_cnd_core_checksum_method_cndengine_clear_logs() != 44053) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_cnd_core_checksum_method_cndengine_clear_taxonomy_group_override() != 7320) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_cnd_core_checksum_method_cndengine_clear_taxonomy_override() != 36907) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_cnd_core_checksum_method_cndengine_compute_file_moviehash() != 56313) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11660,6 +12564,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_cnd_core_checksum_method_cndengine_find_mirrors() != 47437) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_cnd_core_checksum_method_cndengine_get_category_facets() != 665) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_cnd_core_checksum_method_cndengine_get_channel_epg() != 33464) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11679,6 +12586,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_get_item_by_id() != 53307) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_cnd_core_checksum_method_cndengine_get_item_taxonomy() != 61870) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_get_logs_since() != 8821) {
@@ -11708,6 +12618,12 @@ private let initializationResult: InitializationResult = {
     if (uniffi_cnd_core_checksum_method_cndengine_get_stream_health_batch() != 62601) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_cnd_core_checksum_method_cndengine_get_taxonomy_group_override() != 30434) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_cnd_core_checksum_method_cndengine_get_taxonomy_override() != 61595) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_cnd_core_checksum_method_cndengine_hide_group() != 55008) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11733,6 +12649,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_is_health_check_running() != 14603) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_cnd_core_checksum_method_cndengine_is_reclassifying_categories() != 26379) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_library_add_folder() != 39627) {
@@ -11864,10 +12783,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_cnd_core_checksum_method_cndengine_query_catalog() != 44076) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_cnd_core_checksum_method_cndengine_query_catalog_by_taxonomy() != 25965) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_cnd_core_checksum_method_cndengine_query_items() != 5155) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_query_series() != 15417) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_cnd_core_checksum_method_cndengine_query_series_by_taxonomy() != 42221) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_recommendations_for() != 15204) {
@@ -11898,6 +12823,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_reset_dismissed_recommendations() != 39800) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_cnd_core_checksum_method_cndengine_reset_taxonomy_overrides() != 42194) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_resolve_catchup_url() != 35548) {
@@ -11936,6 +12864,12 @@ private let initializationResult: InitializationResult = {
     if (uniffi_cnd_core_checksum_method_cndengine_set_recording_directory() != 6578) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_cnd_core_checksum_method_cndengine_set_taxonomy_group_override() != 45191) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_cnd_core_checksum_method_cndengine_set_taxonomy_override() != 32806) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_cnd_core_checksum_method_cndengine_start_all_downloads() != 46323) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11955,6 +12889,12 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_subtitles_signed_in() != 55309) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_cnd_core_checksum_method_cndengine_taxonomy_override_summary() != 31984) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_cnd_core_checksum_method_cndengine_taxonomy_status() != 14573) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cnd_core_checksum_method_cndengine_toggle_broken() != 30986) {

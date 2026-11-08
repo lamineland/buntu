@@ -43,7 +43,9 @@ extension SeriesRecord: CatalogEntry {
 /// How a model reaches the engine for one kind of entry; closures keep the model generic and let
 /// tests plug in anything.
 struct VodSource<Entry: CatalogEntry>: Sendable {
-    var query: @Sendable (CatalogFilter) throws -> [Entry]
+    var query: @Sendable (CatalogFilter, TaxonomyFilter) throws -> [Entry]
+    /// Entries of the country / theme axes (PRD-33 lot 33.5), with the other axis' selection applied.
+    var facets: @Sendable (CategoryAxis, TaxonomyFilter) throws -> [CategoryFacet]
     var resume: @Sendable () throws -> [Entry]
     var favorites: @Sendable () throws -> [Entry]
     var groups: @Sendable () throws -> [FacetCount]
@@ -53,7 +55,8 @@ struct VodSource<Entry: CatalogEntry>: Sendable {
 extension VodSource where Entry == IptvItemRecord {
     static func movies(engine: CndEngine) -> VodSource {
         VodSource(
-            query: { try engine.queryCatalog(filter: $0) },
+            query: { try engine.queryCatalogByTaxonomy(filter: $0, taxonomy: $1) },
+            facets: { try engine.getCategoryFacets(kind: "movie", axis: $0, sourceId: nil, filter: $1) },
             // "Continue watching": started and not finished.
             resume: {
                 try engine.listRecentItems(kind: "movie", limit: 40)
@@ -70,7 +73,8 @@ extension VodSource where Entry == IptvItemRecord {
 extension VodSource where Entry == SeriesRecord {
     static func series(engine: CndEngine) -> VodSource {
         VodSource(
-            query: { try engine.querySeries(filter: $0) },
+            query: { try engine.querySeriesByTaxonomy(filter: $0, taxonomy: $1) },
+            facets: { try engine.getCategoryFacets(kind: "series", axis: $0, sourceId: nil, filter: $1) },
             resume: { try engine.listRecentSeries(limit: 20) },
             favorites: { try engine.listFavoriteSeries() },
             groups: { try engine.getGroups(kind: "series", sourceId: nil) },
@@ -89,7 +93,13 @@ final class VodCatalogModel<Entry: CatalogEntry> {
     let kind: String
     let source: VodSource<Entry>
     let filter: SearchFilterState
+    /// Axis of the category column (PRD-33). `.provider` is the provider's own list (`groups`).
+    var axis: CategoryAxis = .provider
 
+    private(set) var columnFacets: [CategoryFacet] = []
+    private(set) var crossFacets: [CategoryFacet] = []
+    /// "Tous" counter of the column when a selection of the other axis narrows it.
+    private(set) var allCount: Int?
     private(set) var entries: [Entry] = []
     private(set) var resume: [Entry] = []
     private(set) var favorites: [Entry] = []
@@ -110,19 +120,24 @@ final class VodCatalogModel<Entry: CatalogEntry> {
     }
 
     var showsSections: Bool {
-        filter.query.isEmpty && filter.group == nil && filter.host == nil && !filter.showBroken
+        filter.query.isEmpty && filter.group == nil && !filter.hasTaxonomySelection && filter.host == nil && !filter.showBroken
     }
 
     /// A search looks in every category: the selected one is only applied while the search is empty,
     /// and comes back as soon as it is cleared.
     var searchIgnoresCategory: Bool {
-        !filter.query.isEmpty && filter.group != nil
+        !filter.query.isEmpty && (filter.group != nil || filter.hasTaxonomySelection)
+    }
+
+    var taxonomyFilter: TaxonomyFilter {
+        guard filter.query.isEmpty, axis != .provider else { return TaxonomyFilter(country: nil, theme: nil, subtheme: nil) }
+        return TaxonomyFilter(country: filter.country, theme: filter.theme, subtheme: filter.theme == nil ? nil : filter.subtheme)
     }
 
     private func makeFilter(offset: Int) -> CatalogFilter {
         CatalogFilter(
             kind: kind, sourceId: nil, query: filter.query,
-            groupTitle: filter.query.isEmpty ? filter.group : nil, host: filter.host,
+            groupTitle: filter.query.isEmpty && axis == .provider ? filter.group : nil, host: filter.host,
             favoritesOnly: false, includeBroken: filter.showBroken, includeHidden: false, sortBy: filter.sort, sortAsc: filter.ascending,
             limit: UInt32(Self.pageSize), offset: UInt32(offset)
         )
@@ -147,12 +162,13 @@ final class VodCatalogModel<Entry: CatalogEntry> {
 
         let source = self.source
         let first = makeFilter(offset: 0)
+        let taxonomy = taxonomyFilter
         let sections = showsSections
         let facets = loadedFacetsRevision != revision
         do {
             let snapshot = try await Task.detached(priority: .userInitiated) { () -> Snapshot in
                 Snapshot(
-                    page: try source.query(first),
+                    page: try source.query(first, taxonomy),
                     resume: sections ? try source.resume() : [],
                     favorites: sections ? try source.favorites() : [],
                     groups: facets ? try source.groups() : nil,
@@ -177,14 +193,65 @@ final class VodCatalogModel<Entry: CatalogEntry> {
         }
     }
 
+    // MARK: Country / theme facets (PRD-33 lot 33.5)
+
+    private struct FacetSnapshot: Sendable {
+        var column: [CategoryFacet]
+        var cross: [CategoryFacet]
+        var allCount: Int?
+    }
+
+    /// Reads the column and the chips of the current axis. Called when the axis, the selection or the
+    /// catalogue changes, not on every keystroke of the search. Does nothing on the provider axis.
+    func reloadTaxonomyFacets() async {
+        guard axis != .provider, let other = axis.other else {
+            columnFacets = []
+            crossFacets = []
+            allCount = nil
+            return
+        }
+        let source = self.source
+        let axis = self.axis
+        let selection = TaxonomyFilter(country: filter.country, theme: filter.theme, subtheme: filter.subtheme)
+        let wantsAllCountryTotal = axis == .theme && filter.country != nil
+        do {
+            let snapshot = try await Task.detached(priority: .userInitiated) { () -> FacetSnapshot in
+                let column = try source.facets(axis, selection)
+                let cross = try source.facets(other, selection)
+                var all: Int?
+                if axis == .country {
+                    all = column.reduce(0) { $0 + Int($1.count) }
+                } else if wantsAllCountryTotal {
+                    let countries = try source.facets(.country, TaxonomyFilter(country: nil, theme: nil, subtheme: nil))
+                    all = countries.first { $0.key == selection.country }.map { Int($0.count) } ?? 0
+                }
+                return FacetSnapshot(column: column, cross: cross, allCount: all)
+            }.value
+            guard axis == self.axis else { return }
+            columnFacets = CategoryText.sorted(snapshot.column, axis: axis)
+            crossFacets = CategoryText.sorted(snapshot.cross, axis: other)
+            allCount = snapshot.allCount
+        } catch {
+            errorMessage = userMessage(for: error)
+        }
+    }
+
+    /// Genres of the selected theme (action, comedy…), for the second chips row.
+    var subthemeFacets: [FacetCount] {
+        guard axis == .theme || filter.theme != nil, let theme = filter.theme else { return [] }
+        let source = axis == .theme ? columnFacets : crossFacets
+        return source.first { $0.key == theme }?.subkeys ?? []
+    }
+
     func loadNextPage() async {
         guard hasMore, !isLoading, !isLoadingMore else { return }
         isLoadingMore = true
         let gen = generation
         let source = self.source
         let next = makeFilter(offset: entries.count)
+        let taxonomy = taxonomyFilter
         do {
-            let page = try await Task.detached(priority: .userInitiated) { try source.query(next) }.value
+            let page = try await Task.detached(priority: .userInitiated) { try source.query(next, taxonomy) }.value
             guard gen == generation else { return }
             entries.append(contentsOf: page)
             hasMore = page.count >= Self.pageSize

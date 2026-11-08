@@ -476,3 +476,53 @@ final class LiveSearchAcrossCategoriesTests: XCTestCase {
         XCTAssertFalse(model.searchIgnoresCategory)
     }
 }
+
+// MARK: - Genres of films and series (PRD-33 lot 33.5)
+
+final class VodGenreTests: VodTestCase {
+    func testMoviesAreBrowsedByGenreOnTheThemeAxis() async throws {
+        try await TestFixtures.importVod(into: engine, directory: directory, movies: 130)
+        let model = VodCatalogModel<IptvItemRecord>(kind: "movie", source: .movies(engine: engine))
+        model.axis = .theme
+        await model.reloadTaxonomyFacets()
+
+        let cinema = try XCTUnwrap(model.columnFacets.first { $0.key == "movies" })
+        XCTAssertEqual(cinema.count, 130)
+        XCTAssertEqual(Set(cinema.subkeys.map(\.value)), ["action", "drama"], "the provider's Action and Drame become genres")
+        XCTAssertEqual(CategoryText.subthemeName("drama"), "Drame")
+        XCTAssertFalse(model.crossFacets.isEmpty, "the country chips come with the theme column")
+
+        model.filter.theme = "movies"
+        model.filter.subtheme = "action"
+        await model.reload()
+        XCTAssertEqual(model.entries.count, 60)
+        XCTAssertEqual(model.subthemeFacets.map(\.value).sorted(), ["action", "drama"])
+        XCTAssertFalse(model.showsSections, "a genre is a filter: no 'resume' shelf")
+        XCTAssertTrue(model.entries.allSatisfy { $0.groupTitle == "Action" })
+        await model.loadNextPage()
+        XCTAssertEqual(model.entries.count, 65)
+    }
+
+    func testTheProviderAxisIgnoresTheTaxonomySelection() async throws {
+        try await TestFixtures.importVod(into: engine, directory: directory, movies: 12)
+        let model = VodCatalogModel<IptvItemRecord>(kind: "movie", source: .movies(engine: engine))
+        model.filter.theme = "documentary"
+        await model.reload()
+        XCTAssertEqual(model.entries.count, 12, "axis .provider: the selection of another axis is not applied")
+        model.axis = .theme
+        await model.reload()
+        XCTAssertTrue(model.entries.isEmpty)
+    }
+
+    func testSeriesCarryTheirGenreToo() async throws {
+        try await TestFixtures.importVod(into: engine, directory: directory, movies: 3)
+        let model = VodCatalogModel<SeriesRecord>(kind: "series", source: .series(engine: engine))
+        model.axis = .theme
+        await model.reloadTaxonomyFacets()
+        let series = try XCTUnwrap(model.columnFacets.first { $0.key == "series" })
+        XCTAssertEqual(series.count, 2)
+        model.filter.theme = "series"
+        await model.reload()
+        XCTAssertEqual(model.entries.count, 2)
+    }
+}

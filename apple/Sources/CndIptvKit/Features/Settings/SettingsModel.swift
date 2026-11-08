@@ -15,6 +15,10 @@ final class SettingsModel {
     let keychain: KeychainStore
     let directory: DownloadDirectoryManager
     @ObservationIgnored var onConsoleVisibilityChanged: (Bool) -> Void = { _ in }
+    /// Corrections of countries and themes were reset (PRD-33): screens must reload.
+    @ObservationIgnored var onCategoriesChanged: () -> Void = {}
+    /// How many corrections of country / theme the user made, for a channel or a provider category.
+    private(set) var categoryCorrections = TaxonomyOverrideSummary(items: 0, groups: 0)
 
     /// Simultaneous connections of the user's subscription (default 1). Downloads stay under it.
     var connectionLimit: Int {
@@ -193,6 +197,19 @@ final class SettingsModel {
         let version = info?["CFBundleShortVersionString"] as? String ?? "dev"
         let build = info?["CFBundleVersion"] as? String
         return build.map { "\(version) (\($0))" } ?? version
+    }
+
+    func refreshCategoryCorrections() {
+        if let summary = try? engine.taxonomyOverrideSummary() { categoryCorrections = summary }
+    }
+
+    /// "Réinitialiser mes corrections de catégories": the classifier's own country and themes come back.
+    @discardableResult
+    func resetCategoryCorrections() -> UInt32 {
+        let removed = (try? engine.resetTaxonomyOverrides()) ?? 0
+        refreshCategoryCorrections()
+        if removed > 0 { onCategoriesChanged() }
+        return removed
     }
 }
 

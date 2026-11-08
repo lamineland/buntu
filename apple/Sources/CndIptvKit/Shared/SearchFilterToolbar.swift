@@ -25,6 +25,11 @@ final class SearchFilterState {
     var text = "" { didSet { if text != oldValue { scheduleDebounce() } } }
     private(set) var query = ""
     var group: String?
+    /// ISO code, `INT`, or `""` for "country unknown" (PRD-33). `nil` = every country.
+    var country: String?
+    /// Theme id of the closed list, with an optional sub-theme. `nil` = every theme.
+    var theme: String?
+    var subtheme: String?
     var host: String?
     var showBroken = false
     var sort: SortField
@@ -56,15 +61,24 @@ final class SearchFilterState {
 
     func resetFilters() {
         group = nil
+        clearTaxonomy()
         host = nil
         showBroken = false
     }
 
-    var hasActiveFilter: Bool { group != nil || host != nil || showBroken }
+    func clearTaxonomy() {
+        country = nil
+        theme = nil
+        subtheme = nil
+    }
+
+    var hasTaxonomySelection: Bool { country != nil || theme != nil }
+
+    var hasActiveFilter: Bool { group != nil || hasTaxonomySelection || host != nil || showBroken }
 
     /// Changes whenever the catalog query must be re-run (used as a `.task(id:)` key).
     var signature: String {
-        "\(query)|\(group ?? "")|\(host ?? "")|\(sort)|\(ascending)|\(showBroken)"
+        "\(query)|\(group ?? "")|\(country ?? "-")|\(theme ?? "-")|\(subtheme ?? "-")|\(host ?? "")|\(sort)|\(ascending)|\(showBroken)"
     }
 }
 

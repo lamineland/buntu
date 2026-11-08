@@ -159,6 +159,7 @@ private struct LoadedShellView: View {
         _recordingsModel = State(initialValue: RecordingsModel(backend: engine))
         let settings = SettingsModel(engine: engine, directory: state.downloadDirectory)
         settings.onConsoleVisibilityChanged = { [weak state] visible in state?.showNetworkConsole = visible }
+        settings.onCategoriesChanged = { [weak state] in state?.reloadSnapshot() }
         _settingsModel = State(initialValue: settings)
         _consoleModel = State(initialValue: ConsoleModel(engine: engine))
         #if !os(tvOS)
@@ -801,6 +802,7 @@ private struct LoadedShellView: View {
                     onAddToMultiView: addToMultiView,
                     onOpenMultiView: openMultiView,
                     onStartOver: { channel, program in startOver(channel: channel, program: program) },
+                    onCategoriesChanged: { state.reloadSnapshot() },
                     searchRequest: $liveSearchRequest
                 )
             case .guide:
@@ -818,11 +820,13 @@ private struct LoadedShellView: View {
                 SourcesListView(engine: engine, sources: state.sources, model: sourcesModel)
             case .movies:
                 vodScreen(MoviesCatalogView(
-                    engine: engine, revision: state.catalogRevision, totalMovies: Int(state.stats?.totalMovies ?? 0)
+                    engine: engine, revision: state.catalogRevision, totalMovies: Int(state.stats?.totalMovies ?? 0),
+                    onCategoriesChanged: { state.reloadSnapshot() }
                 ))
             case .series:
                 vodScreen(SeriesCatalogView(
-                    engine: engine, revision: state.catalogRevision, totalSeries: Int(state.stats?.totalSeries ?? 0)
+                    engine: engine, revision: state.catalogRevision, totalSeries: Int(state.stats?.totalSeries ?? 0),
+                    onCategoriesChanged: { state.reloadSnapshot() }
                 ))
             case .downloads:
                 DownloadsDashboardView(model: downloadsModel, directory: state.downloadDirectory, onPlay: playDownload)

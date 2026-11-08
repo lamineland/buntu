@@ -146,6 +146,10 @@ impl DatabaseManager {
 
     pub fn allow_group(&self, profile_id: i64, kind: &str, group: &str) -> Result<(), DbError> {
         let key = normalize_group_key(group);
+        // A Kids profile can be given a whole theme (`theme:live` / `kids`), never the adult one (PRD-33).
+        if kind.starts_with("theme:") && key == "adult" {
+            return Err(DbError::Query("The adult theme can never be allowed for a Kids profile".to_string()));
+        }
         self.with_conn(|conn| {
             conn.execute(
                 "INSERT OR REPLACE INTO kids_allowed_groups(profile_id, kind, group_key) VALUES (?1, ?2, ?3)",

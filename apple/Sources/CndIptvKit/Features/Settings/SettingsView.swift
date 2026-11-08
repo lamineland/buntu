@@ -21,6 +21,7 @@ struct SettingsView: View {
     @AppStorage("openSubtitlesLanguages") private var openSubtitlesLanguages: String = "fr,en"
     @AppStorage("openSubtitlesAutoSearch") private var openSubtitlesAutoSearch = false
     @State private var showingProfilesManagement = false
+    @State private var confirmingCategoryReset = false
     @State private var showingAdultUnlock = false
     @State private var parental = ParentalControlManager.shared
 
@@ -29,6 +30,7 @@ struct SettingsView: View {
             playbackAndHealthSection
             if let upNext { recommendationsSection(upNext) }
             profilesAndBouquetsSection
+            categoriesSection
             parentalSection
             appearanceSection
             #if os(macOS)
@@ -221,6 +223,28 @@ struct SettingsView: View {
                         }
                     }
             }
+        }
+    }
+
+    private var categoriesSection: some View {
+        let count = Int(model.categoryCorrections.items + model.categoryCorrections.groups)
+        return Section {
+            LabeledContent("Corrections faites") {
+                Text(count == 0 ? "Aucune" : "\(model.categoryCorrections.items) chaîne(s), \(model.categoryCorrections.groups) catégorie(s)")
+            }
+            Button("Réinitialiser mes corrections de catégories…", role: .destructive) { confirmingCategoryReset = true }
+                .disabled(count == 0)
+        } header: {
+            Text("Catégories")
+        } footer: {
+            Text("Le pays et le thème des chaînes sont devinés à partir de la playlist. « Changer le pays ou le thème » (clic droit sur une chaîne) les corrige ; ceci les efface toutes.")
+        }
+        .onAppear { model.refreshCategoryCorrections() }
+        .confirmationDialog("Réinitialiser les corrections de catégories ?", isPresented: $confirmingCategoryReset) {
+            Button("Réinitialiser", role: .destructive) { model.resetCategoryCorrections() }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Les \(count) correction(s) seront effacées et le classement automatique reviendra.")
         }
     }
 

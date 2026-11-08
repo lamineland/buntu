@@ -237,6 +237,19 @@ impl DatabaseManager {
                          AND hg.kind = i.kind
                          AND hg.group_key = COALESCE(i.group_title, '')
                    )
+                   AND (
+                       NOT EXISTS (
+                           SELECT 1 FROM hidden_groups tx
+                           WHERE tx.profile_id = (SELECT id FROM temp.active_profile)
+                             AND (tx.kind LIKE 'country:%' OR tx.kind LIKE 'theme:%')
+                       )
+                       OR NOT EXISTS (
+                           SELECT 1 FROM hidden_groups tg
+                           WHERE tg.profile_id = (SELECT id FROM temp.active_profile)
+                             AND ((tg.kind = 'country:' || i.kind AND tg.group_key = LOWER(COALESCE(i.tx_country, '')))
+                                  OR (tg.kind = 'theme:' || i.kind AND tg.group_key = LOWER(COALESCE(i.tx_theme, ''))))
+                       )
+                   )
                    AND NOT EXISTS (
                        SELECT 1 FROM recommendation_dismissals rd
                        WHERE rd.profile_id = (SELECT id FROM temp.active_profile)
@@ -247,8 +260,10 @@ impl DatabaseManager {
                        OR EXISTS (
                            SELECT 1 FROM kids_allowed_groups kag
                            WHERE kag.profile_id = (SELECT id FROM temp.active_profile)
-                             AND kag.kind = i.kind
-                             AND kag.group_key = COALESCE(i.group_title, '')
+                             AND (
+                                 (kag.kind = i.kind AND kag.group_key = COALESCE(i.group_title, ''))
+                                 OR (kag.kind = 'theme:' || i.kind AND kag.group_key = LOWER(COALESCE(i.tx_theme, '')) AND COALESCE(i.tx_theme, '') != 'adult')
+                             )
                        )
                    )
                    AND (
@@ -369,6 +384,19 @@ impl DatabaseManager {
                          AND hg.kind = i.kind
                          AND hg.group_key = COALESCE(i.group_title, '')
                    )
+                   AND (
+                       NOT EXISTS (
+                           SELECT 1 FROM hidden_groups tx
+                           WHERE tx.profile_id = (SELECT id FROM temp.active_profile)
+                             AND (tx.kind LIKE 'country:%' OR tx.kind LIKE 'theme:%')
+                       )
+                       OR NOT EXISTS (
+                           SELECT 1 FROM hidden_groups tg
+                           WHERE tg.profile_id = (SELECT id FROM temp.active_profile)
+                             AND ((tg.kind = 'country:' || i.kind AND tg.group_key = LOWER(COALESCE(i.tx_country, '')))
+                                  OR (tg.kind = 'theme:' || i.kind AND tg.group_key = LOWER(COALESCE(i.tx_theme, ''))))
+                       )
+                   )
                    AND NOT EXISTS (
                        SELECT 1 FROM recommendation_dismissals rd
                        WHERE rd.profile_id = (SELECT id FROM temp.active_profile)
@@ -379,8 +407,10 @@ impl DatabaseManager {
                        OR EXISTS (
                            SELECT 1 FROM kids_allowed_groups kag
                            WHERE kag.profile_id = (SELECT id FROM temp.active_profile)
-                             AND kag.kind = i.kind
-                             AND kag.group_key = COALESCE(i.group_title, '')
+                             AND (
+                                 (kag.kind = i.kind AND kag.group_key = COALESCE(i.group_title, ''))
+                                 OR (kag.kind = 'theme:' || i.kind AND kag.group_key = LOWER(COALESCE(i.tx_theme, '')) AND COALESCE(i.tx_theme, '') != 'adult')
+                             )
                        )
                    )
                    AND (

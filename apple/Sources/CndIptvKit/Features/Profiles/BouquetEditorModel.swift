@@ -19,6 +19,9 @@ public final class BouquetEditorModel {
     public let kind: String
     public private(set) var categories: [BouquetCategoryItem] = []
     public private(set) var favoriteFolders: [FavoriteFolderRecord] = []
+    /// Countries and themes hidden for the active profile (ISO codes in upper case, theme ids), PRD-33.
+    public private(set) var hiddenCountries: [String] = []
+    public private(set) var hiddenThemes: [String] = []
     public var errorMessage: String?
     public var isLoading = false
 
@@ -50,6 +53,8 @@ public final class BouquetEditorModel {
                 ))
             }
             self.categories = items
+            hiddenCountries = try engine.listHiddenGroups(profileId: profileId, kind: "country:\(kind)").map { $0.uppercased() }
+            hiddenThemes = try engine.listHiddenGroups(profileId: profileId, kind: "theme:\(kind)")
             self.favoriteFolders = try engine.listFavoriteFolders(profileId: profileId)
         } catch {
             errorMessage = "Erreur lors du chargement des catégories : \(error.localizedDescription)"
@@ -68,6 +73,24 @@ public final class BouquetEditorModel {
             reload()
         } catch {
             errorMessage = "Impossible de modifier la visibilité : \(error.localizedDescription)"
+        }
+    }
+
+    /// Shows a country hidden from the category column again.
+    public func unhideCountry(_ code: String) {
+        unhide(kind: "country:\(kind)", key: code)
+    }
+
+    public func unhideTheme(_ id: String) {
+        unhide(kind: "theme:\(kind)", key: id)
+    }
+
+    private func unhide(kind: String, key: String) {
+        do {
+            _ = try engine.unhideGroup(profileId: engine.activeProfileId(), kind: kind, group: key)
+            reload()
+        } catch {
+            errorMessage = "Impossible d'afficher de nouveau : \(error.localizedDescription)"
         }
     }
 

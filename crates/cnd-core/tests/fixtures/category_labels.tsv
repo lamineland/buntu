@@ -1,0 +1,322 @@
+live	Albania	AL	other
+live	Andorra	AD	other
+live	Animation	-	kids/animation
+live	Animation;Classic	-	kids/animation
+live	Animation;Classic;Entertainment	-	kids/animation,entertainment
+live	Animation;Comedy	-	entertainment/comedy
+live	Animation;Culture;Entertainment	-	kids/animation,documentary/culture,entertainment
+live	Animation;Entertainment	-	kids/animation,entertainment
+live	Animation;Family;Kids	-	kids/animation
+live	Animation;General;Kids	-	kids/animation,general
+live	Animation;Kids	-	kids/animation
+live	Animation;Kids;Music	-	kids/animation,music
+live	Animation;Kids;Public	-	kids/animation,general/public
+live	Animation;Kids;Religious	-	kids/animation,religious
+episode	Animation;Kids;Series	-	kids/animation,series
+movie	Animation;Movies	-	kids/animation,movies
+live	Argentina	AR	other
+live	Armenia	AM	other
+live	Australia	AU	other
+live	Austria	AT	other
+live	Auto	-	lifestyle/auto
+live	Auto;Documentary	-	lifestyle/auto,documentary
+live	Auto;Entertainment	-	lifestyle/auto,entertainment
+episode	Auto;Outdoor;Series;Sports	-	lifestyle/auto,series,sports
+live	Auto;Outdoor;Sports	-	lifestyle/auto,sports
+episode	Auto;Series	-	lifestyle/auto,series
+live	Auto;Travel	-	lifestyle/auto
+live	Azerbaijan	AZ	other
+live	Belarus	BY	other
+live	Belgium	BE	other
+live	Bosnia and Herzegovina	BA	other
+live	Brazil	BR	other
+live	Bulgaria	BG	other
+live	Business	-	news/business
+live	Business;Culture;Lifestyle	-	news/business,documentary/culture,lifestyle
+live	Business;Documentary	-	news/business,documentary
+live	Business;News	-	news/business
+episode	Business;Series	-	news/business,series
+live	Canada	CA	other
+live	Chad	TD	other
+live	Chile	CL	other
+live	China	CN	other
+live	Classic	-	movies/classic
+live	Classic;Comedy	-	entertainment/comedy
+episode	Classic;Comedy;Public;Series	-	series/comedy,general/public
+movie	Classic;Movies	-	movies/classic
+live	Classic;Music	-	music
+live	Classic;News	-	news
+episode	Classic;Series	-	series
+live	Classic;Shop	-	shopping
+live	Comedy	-	entertainment/comedy
+movie	Comedy;Family;Movies	-	movies/comedy
+episode	Comedy;Family;Series	-	series/comedy
+live	Comedy;Kids	-	entertainment/comedy,kids
+movie	Comedy;Movies	-	movies/comedy
+episode	Comedy;Movies;Series	-	series/comedy
+episode	Comedy;Movies;Series;Sports	-	series/comedy,sports
+episode	Comedy;Series	-	series/comedy
+live	Cooking	-	lifestyle/cooking
+live	Cooking;Documentary	-	lifestyle/cooking,documentary
+live	Cooking;Education	-	lifestyle/cooking,education
+live	Cooking;Lifestyle	-	lifestyle/cooking
+live	Cooking;Shop	-	lifestyle/cooking,shopping
+live	Costa Rica	CR	other
+live	Croatia	HR	other
+live	Culture	-	documentary/culture
+live	Culture;Documentary	-	documentary/culture
+movie	Culture;Documentary;Entertainment;General;Movies;Music	-	documentary/culture,entertainment,general,movies,music
+live	Culture;Documentary;Travel	-	documentary/culture,lifestyle/travel
+live	Culture;Education	-	documentary/culture,education
+live	Culture;Education;Entertainment	-	documentary/culture,education,entertainment
+live	Culture;Education;News	-	documentary/culture,education,news
+live	Culture;Education;Public	-	documentary/culture,education,general/public
+live	Culture;Entertainment	-	documentary/culture,entertainment
+live	Culture;Entertainment;Music	-	documentary/culture,entertainment,music
+live	Culture;Entertainment;Music;News	-	documentary/culture,entertainment,music,news
+live	Culture;Entertainment;Sports	-	documentary/culture,entertainment,sports
+live	Culture;Entertainment;Sports;Travel	-	documentary/culture,entertainment,sports,lifestyle/travel
+live	Culture;Family	-	documentary/culture
+live	Culture;Family;General	-	documentary/culture,general
+live	Culture;General	-	documentary/culture,general
+live	Culture;General;Music;News	-	documentary/culture,general,music,news
+live	Culture;General;Religious	-	documentary/culture,general,religious
+live	Culture;Kids	-	documentary/culture,kids
+live	Culture;Lifestyle	-	documentary/culture,lifestyle
+live	Culture;Music	-	documentary/culture,music
+live	Culture;Music;Religious	-	documentary/culture,music,religious
+live	Culture;News	-	documentary/culture,news
+live	Culture;Public	-	documentary/culture,general/public
+live	Culture;Religious	-	documentary/culture,religious
+live	Culture;Sports	-	documentary/culture,sports
+live	Culture;Travel	-	documentary/culture,lifestyle/travel
+live	Cyprus	CY	other
+live	Czech Republic	CZ	other
+live	Denmark	DK	other
+live	Documentaries (AR)	-	documentary
+live	Documentaries (EN)	-	documentary
+live	Documentary	-	documentary
+live	Documentary;Education	-	documentary,education
+live	Documentary;Education;Outdoor;Relax	-	documentary,education,lifestyle/outdoor,music/relax
+live	Documentary;Education;Science	-	documentary/science,education
+live	Documentary;Entertainment	-	documentary,entertainment
+live	Documentary;Lifestyle	-	documentary,lifestyle
+live	Documentary;News	-	documentary,news
+live	Documentary;Outdoor	-	documentary,lifestyle/outdoor
+live	Documentary;Religious	-	documentary,religious
+live	Documentary;Science	-	documentary/science
+episode	Documentary;Series	-	documentary,series
+live	Dominican Republic	DO	other
+live	Education	-	education
+live	Education;Entertainment	-	education,entertainment
+live	Education;Entertainment;News	-	education,entertainment,news
+live	Education;General	-	education,general
+live	Education;Kids	-	education,kids
+live	Education;Lifestyle	-	education,lifestyle
+live	Education;Lifestyle;Science	-	education,lifestyle,documentary/science
+live	Education;News	-	education,news
+live	Education;News;Science	-	education,news,documentary/science
+live	Education;Outdoor	-	education,lifestyle/outdoor
+live	Education;Religious	-	education,religious
+live	Education;Science	-	education,documentary/science
+live	Egypt	EG	other
+live	Entertainment	-	entertainment
+live	Entertainment;Family	-	entertainment
+live	Entertainment;Family;General	-	entertainment,general
+live	Entertainment;Family;General;News	-	entertainment,general,news
+live	Entertainment;General	-	entertainment,general
+movie	Entertainment;General;Movies;Music	-	entertainment,general,movies,music
+live	Entertainment;General;News	-	entertainment,general,news
+episode	Entertainment;General;Series	-	entertainment,general,series
+live	Entertainment;Interactive	-	entertainment/interactive
+live	Entertainment;Kids	-	entertainment,kids
+live	Entertainment;Lifestyle	-	entertainment,lifestyle
+movie	Entertainment;Movies	-	entertainment,movies
+live	Entertainment;Music	-	entertainment,music
+live	Entertainment;News	-	entertainment,news
+live	Entertainment;News;Shop	-	entertainment,news,shopping
+live	Entertainment;Outdoor	-	entertainment,lifestyle/outdoor
+episode	Entertainment;Outdoor;Series	-	entertainment,lifestyle/outdoor,series
+episode	Entertainment;Series	-	entertainment,series
+live	Entertainment;Sports	-	entertainment,sports
+live	Entertainment;Travel	-	entertainment,lifestyle/travel
+live	Estonia	EE	other
+live	Family	-	kids/family
+live	Family;General	-	kids/family,general
+movie	Family;General;Movies	-	movies/family,general
+live	Family;Kids	-	kids/family
+movie	Family;Movies	-	movies/family
+live	Family;Music;Religious	-	music,religious
+live	Family;Religious	-	religious
+episode	Family;Series	-	series
+live	Faroe Islands	FO	other
+live	Finland	FI	other
+live	France	FR	other
+live	General	-	general
+live	General;Legislative	-	general,institutional/legislative
+live	General;Lifestyle;Music;News	-	general,lifestyle,music,news
+live	General;Music	-	general,music
+live	General;Music;Public	-	general/public,music
+live	General;News	-	general,news
+live	General;Public	-	general/public
+live	General;Religious	-	general,religious
+episode	General;Series	-	general,series
+live	General;Sports	-	general,sports
+live	General;Travel	-	general,lifestyle/travel
+live	Georgia	GE	other
+live	Germany	DE	other
+live	Greece	GR	other
+live	Greenland	GL	other
+live	Hong Kong	HK	other
+live	Hungary	HU	other
+live	Iceland	IS	other
+live	India	IN	other
+live	Indonesia	ID	other
+live	Interactive;News	-	news
+live	Iran	IR	other
+live	Iraq	IQ	other
+live	Ireland	IE	other
+live	Israel	IL	other
+live	Italy	IT	other
+live	Kazakhstan	KZ	other
+live	Kenya	KE	other
+live	Kids	-	kids
+live	Kids;Lifestyle	-	kids,lifestyle
+movie	Kids;Movies	-	kids,movies
+live	Kids;Music	-	kids,music
+live	Kids;Public	-	kids,general/public
+live	Kids;Religious	-	kids,religious
+live	Kids;Science	-	kids,documentary/science
+episode	Kids;Series	-	kids,series
+live	Kids;Sports	-	kids,sports
+live	Korea	KR	other
+live	Kosovo	XK	other
+live	Latvia	LV	other
+live	Lebanon	LB	other
+live	Legislative	-	institutional/legislative
+live	Legislative;News	-	institutional/legislative,news
+live	Lifestyle	-	lifestyle
+live	Lifestyle;News	-	lifestyle,news
+live	Lifestyle;Outdoor	-	lifestyle/outdoor
+live	Lifestyle;Relax	-	lifestyle,music/relax
+live	Lifestyle;Shop	-	lifestyle,shopping
+live	Lifestyle;Travel	-	lifestyle/travel
+live	Lithuania	LT	other
+live	Luxembourg	LU	other
+live	Macau	MO	other
+live	Malta	MT	other
+live	Mexico	MX	other
+live	Moldova	MD	other
+live	Monaco	MC	other
+live	Mongolia	MN	other
+live	Montenegro	ME	other
+movie	Movies	-	movies
+movie	Movies;Music	-	movies,music
+movie	Movies;News	-	movies,news
+movie	Movies;Religious	-	movies,religious
+episode	Movies;Series	-	series
+movie	Movies;Shop	-	movies,shopping
+live	Music	-	music
+live	Music (EN)	-	music
+live	Music;News	-	music,news
+live	Music;News;Religious	-	music,news,religious
+live	Music;Religious	-	music,religious
+live	Netherlands	NL	other
+live	News	-	news
+live	News (AR)	-	news
+live	News (ES)	-	news
+live	News;Public	-	news,general/public
+live	News;Science	-	news,documentary/science
+live	News;Sports	-	news,sports
+live	Nigeria	NG	other
+live	North Korea	KP	other
+live	North Macedonia	MK	other
+live	Norway	NO	other
+live	Outdoor	-	lifestyle/outdoor
+live	Outdoor;Sports	-	lifestyle/outdoor,sports
+live	Outdoor;Travel	-	lifestyle/outdoor
+live	Paraguay	PY	other
+live	Peru	PE	other
+live	Poland	PL	other
+live	Portugal	PT	other
+live	Public	-	general/public
+live	Public;Sports	-	general/public,sports
+live	Public;Weather	-	general/public,news/weather
+live	Qatar	QA	other
+live	Relax	-	music/relax
+live	Relax;Travel	-	music/relax,lifestyle/travel
+live	Religious	-	religious
+live	Romania	RO	other
+live	Russia	RU	other
+live	San Marino	SM	other
+live	Saudi Arabia	SA	other
+live	Science	-	documentary/science
+live	Serbia	RS	other
+episode	Series	-	series
+live	Shop	-	shopping
+live	Slovakia	SK	other
+live	Slovenia	SI	other
+live	Somalia	SO	other
+live	Spain	ES	other
+live	Sports	-	sports
+live	Sweden	SE	other
+live	Switzerland	CH	other
+live	Taiwan	TW	other
+live	Travel	-	lifestyle/travel
+live	Trinidad	TT	other
+live	Turkey	TR	other
+live	Turkmenistan	TM	other
+live	UK	GB	other
+live	USA	US	other
+live	Ukraine	UA	other
+live	Undefined	-	other
+live	United Arab Emirates	AE	other
+movie	VOD Italy	IT	movies
+movie	VOD Movies (EN)	-	movies
+live	Venezuela	VE	other
+live	Weather	-	news/weather
+live	日本 / Japan	JP	other
+live	FR| SPORTS FHD	FR	sports
+live	FR| CINEMA	FR	movies
+live	FR| INFOS	FR	news
+live	FR| JEUNESSE	FR	kids
+live	FR| DOCUMENTAIRES	FR	documentary
+live	FR| GÉNÉRALISTES	FR	general
+live	|FR| CANAL+ 4K	FR	other
+live	|UK| ENTERTAINMENT	GB	entertainment
+live	|UK| SKY SPORTS	GB	sports
+live	UK| KIDS	GB	kids
+live	[DE] Sport	DE	sports
+live	DE: Nachrichten	DE	news
+live	IT| CALCIO	IT	sports/football
+live	ES| DEPORTES	ES	sports
+live	ES| LALIGA	ES	sports/football
+live	PT| FUTEBOL	PT	sports/football
+live	TR| ULUSAL	TR	general
+live	TR| BELGESEL	TR	documentary
+live	NL| FILMS	NL	movies
+live	BE| INFO	BE	news
+live	CH| SUISSE	CH	other
+live	USA | NBC	US	other
+live	US| NEWS	US	news
+live	CA| FRENCH	CA	other
+live	IN | ZEE	IN	other
+live	AR | NEWS	-	news
+live	AR - MBC	-	other
+live	ARABIC | KIDS	-	kids
+live	EN| MOVIES	-	movies
+live	EXYU | RTS	INT	other
+live	AFRICA | NOLLYWOOD	INT	movies
+live	LATINO | NOVELAS	-	series
+live	MA| MAROC	MA	other
+live	DZ| ALGERIE	DZ	other
+live	SN| SENEGAL	SN	other
+live	VIP | BEIN SPORTS	-	sports
+live	24/7 | SERIES	-	series
+live	ADULTS +18	-	adult
+live	XXX | Adult	-	adult
+movie	VOD FRANCE	FR	movies
+movie	FR| FILMS ACTION	FR	movies/action
+movie	|EN| MOVIES 2024	-	movies
+series	FR| SÉRIES NETFLIX	FR	series
+series	EN| SERIES KIDS	-	series,kids

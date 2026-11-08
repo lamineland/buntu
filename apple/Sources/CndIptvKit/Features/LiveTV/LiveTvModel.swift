@@ -27,6 +27,13 @@ final class LiveTvModel {
     @ObservationIgnored var onFavoriteChanged: () -> Void = {}
 
     private(set) var groups: [FacetCount] = []
+    /// Axis of the category column (PRD-33). `.provider` is the provider's own list (`groups`).
+    var axis: CategoryAxis = .provider
+    /// Entries of the column for the country / theme axes, and of the chips for the other axis.
+    private(set) var columnFacets: [CategoryFacet] = []
+    private(set) var crossFacets: [CategoryFacet] = []
+    /// "Toutes" counter of the column: what the current selection of the *other* axis leaves.
+    private(set) var allCount: Int?
     private(set) var hosts: [FacetCount] = []
     private(set) var recents: [IptvItemRecord] = []
     private(set) var favorites: [IptvItemRecord] = []
@@ -52,12 +59,18 @@ final class LiveTvModel {
 
     /// Recents and Favorites are only shown when nothing narrows the catalog.
     var showsSections: Bool {
-        filter.query.isEmpty && filter.group == nil && filter.host == nil && !filter.showBroken
+        filter.query.isEmpty && filter.group == nil && !filter.hasTaxonomySelection && filter.host == nil && !filter.showBroken
     }
 
     /// A search looks in every category; the selected one comes back when the search is cleared.
     var searchIgnoresCategory: Bool {
-        !filter.query.isEmpty && filter.group != nil
+        !filter.query.isEmpty && (filter.group != nil || filter.hasTaxonomySelection)
+    }
+
+    /// Country / theme restriction of the catalogue query (none while searching, like the provider group).
+    var taxonomyFilter: TaxonomyFilter {
+        guard filter.query.isEmpty, axis != .provider else { return TaxonomyFilter(country: nil, theme: nil, subtheme: nil) }
+        return TaxonomyFilter(country: filter.country, theme: filter.theme, subtheme: filter.theme == nil ? nil : filter.subtheme)
     }
 
     private func makeFilter(offset: Int) -> CatalogFilter {
@@ -65,7 +78,7 @@ final class LiveTvModel {
             kind: "live",
             sourceId: nil,
             query: filter.query,
-            groupTitle: filter.query.isEmpty ? filter.group : nil,
+            groupTitle: filter.query.isEmpty && axis == .provider ? filter.group : nil,
             host: filter.host,
             favoritesOnly: false,
             includeBroken: filter.showBroken,
@@ -106,12 +119,13 @@ final class LiveTvModel {
 
         let engine = self.engine
         let first = makeFilter(offset: 0)
+        let taxonomy = taxonomyFilter
         let wantsSections = showsSections
         let wantsFacets = loadedFacetsRevision != revision
         do {
             let snapshot = try await Task.detached(priority: .userInitiated) { () -> Snapshot in
                 Snapshot(
-                    page: try engine.queryCatalog(filter: first),
+                    page: try engine.queryCatalogByTaxonomy(filter: first, taxonomy: taxonomy),
                     groups: wantsFacets ? try engine.getGroups(kind: "live", sourceId: nil) : nil,
                     hosts: wantsFacets ? try engine.getHosts(kind: "live", sourceId: nil) : nil,
                     recents: wantsSections ? try engine.listRecentItems(kind: "live", limit: Self.recentsLimit) : [],
@@ -136,14 +150,71 @@ final class LiveTvModel {
         }
     }
 
+    // MARK: Country / theme facets (PRD-33)
+
+    private struct FacetSnapshot: Sendable {
+        var column: [CategoryFacet]
+        var cross: [CategoryFacet]
+        var allCount: Int?
+    }
+
+    /// Reads the column and the chips of the current axis. Called when the axis, the selection or the
+    /// catalogue changes, not on every keystroke of the search. Does nothing on the provider axis.
+    func reloadTaxonomyFacets() async {
+        guard axis != .provider, let other = axis.other else {
+            columnFacets = []
+            crossFacets = []
+            allCount = nil
+            return
+        }
+        let engine = self.engine
+        let axis = self.axis
+        let selection = TaxonomyFilter(country: filter.country, theme: filter.theme, subtheme: filter.subtheme)
+        let wantsAllCountryTotal = axis == .theme && filter.country != nil
+        do {
+            let snapshot = try await Task.detached(priority: .userInitiated) { () -> FacetSnapshot in
+                let column = try engine.getCategoryFacets(kind: "live", axis: axis, sourceId: nil, filter: selection)
+                let cross = try engine.getCategoryFacets(kind: "live", axis: other, sourceId: nil, filter: selection)
+                var all: Int?
+                if axis == .country {
+                    all = column.reduce(0) { $0 + Int($1.count) }
+                } else if wantsAllCountryTotal {
+                    // The theme column counts what the chosen country leaves, whatever theme is picked.
+                    let countries = try engine.getCategoryFacets(
+                        kind: "live", axis: .country, sourceId: nil,
+                        filter: TaxonomyFilter(country: nil, theme: nil, subtheme: nil)
+                    )
+                    all = countries.first { $0.key == selection.country }.map { Int($0.count) } ?? 0
+                }
+                return FacetSnapshot(column: column, cross: cross, allCount: all)
+            }.value
+            guard axis == self.axis else { return }
+            columnFacets = CategoryText.sorted(snapshot.column, axis: axis)
+            crossFacets = CategoryText.sorted(snapshot.cross, axis: other)
+            allCount = snapshot.allCount
+        } catch {
+            errorMessage = userMessage(for: error)
+        }
+    }
+
+    /// Sub-themes of the selected theme (football, comedy…), for the second chips row.
+    var subthemeFacets: [FacetCount] {
+        guard axis == .theme || filter.theme != nil, let theme = filter.theme else { return [] }
+        let source = axis == .theme ? columnFacets : crossFacets
+        return source.first { $0.key == theme }?.subkeys ?? []
+    }
+
     func loadNextPage() async {
         guard hasMore, !isLoading, !isLoadingMore else { return }
         isLoadingMore = true
         let gen = generation
         let engine = self.engine
         let next = makeFilter(offset: channels.count)
+        let taxonomy = taxonomyFilter
         do {
-            let page = try await Task.detached(priority: .userInitiated) { try engine.queryCatalog(filter: next) }.value
+            let page = try await Task.detached(priority: .userInitiated) {
+                try engine.queryCatalogByTaxonomy(filter: next, taxonomy: taxonomy)
+            }.value
             guard gen == generation else { return }
             channels.append(contentsOf: page)
             hasMore = page.count >= Self.pageSize

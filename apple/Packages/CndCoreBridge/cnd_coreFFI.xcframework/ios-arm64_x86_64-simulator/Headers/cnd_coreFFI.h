@@ -322,6 +322,16 @@ int8_t uniffi_cnd_core_fn_method_cndengine_cancel_recording(void*_Nonnull ptr, i
 void uniffi_cnd_core_fn_method_cndengine_clear_logs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_CLEAR_TAXONOMY_GROUP_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_CLEAR_TAXONOMY_GROUP_OVERRIDE
+void uniffi_cnd_core_fn_method_cndengine_clear_taxonomy_group_override(void*_Nonnull ptr, RustBuffer group_title, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_CLEAR_TAXONOMY_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_CLEAR_TAXONOMY_OVERRIDE
+void uniffi_cnd_core_fn_method_cndengine_clear_taxonomy_override(void*_Nonnull ptr, RustBuffer stable_hash, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_COMPUTE_FILE_MOVIEHASH
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_COMPUTE_FILE_MOVIEHASH
 RustBuffer uniffi_cnd_core_fn_method_cndengine_compute_file_moviehash(void*_Nonnull ptr, RustBuffer file_path, RustCallStatus *_Nonnull out_status
@@ -412,6 +422,11 @@ uint64_t uniffi_cnd_core_fn_method_cndengine_fetch_series_metadata(void*_Nonnull
 RustBuffer uniffi_cnd_core_fn_method_cndengine_find_mirrors(void*_Nonnull ptr, int64_t item_id, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_CATEGORY_FACETS
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_CATEGORY_FACETS
+RustBuffer uniffi_cnd_core_fn_method_cndengine_get_category_facets(void*_Nonnull ptr, RustBuffer kind, RustBuffer axis, RustBuffer source_id, RustBuffer filter, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_CHANNEL_EPG
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_CHANNEL_EPG
 RustBuffer uniffi_cnd_core_fn_method_cndengine_get_channel_epg(void*_Nonnull ptr, RustBuffer tvg_id, int64_t from_ts, int64_t to_ts, RustCallStatus *_Nonnull out_status
@@ -445,6 +460,11 @@ RustBuffer uniffi_cnd_core_fn_method_cndengine_get_hosts(void*_Nonnull ptr, Rust
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_ITEM_BY_ID
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_ITEM_BY_ID
 RustBuffer uniffi_cnd_core_fn_method_cndengine_get_item_by_id(void*_Nonnull ptr, int64_t item_id, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_ITEM_TAXONOMY
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_ITEM_TAXONOMY
+RustBuffer uniffi_cnd_core_fn_method_cndengine_get_item_taxonomy(void*_Nonnull ptr, RustBuffer stable_hash, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_LOGS_SINCE
@@ -492,6 +512,16 @@ RustBuffer uniffi_cnd_core_fn_method_cndengine_get_stream_health(void*_Nonnull p
 RustBuffer uniffi_cnd_core_fn_method_cndengine_get_stream_health_batch(void*_Nonnull ptr, RustBuffer hashes, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_TAXONOMY_GROUP_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_TAXONOMY_GROUP_OVERRIDE
+RustBuffer uniffi_cnd_core_fn_method_cndengine_get_taxonomy_group_override(void*_Nonnull ptr, RustBuffer group_title, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_TAXONOMY_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_GET_TAXONOMY_OVERRIDE
+RustBuffer uniffi_cnd_core_fn_method_cndengine_get_taxonomy_override(void*_Nonnull ptr, RustBuffer stable_hash, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_HIDE_GROUP
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_HIDE_GROUP
 void uniffi_cnd_core_fn_method_cndengine_hide_group(void*_Nonnull ptr, int64_t profile_id, RustBuffer kind, RustBuffer group, RustCallStatus *_Nonnull out_status
@@ -535,6 +565,11 @@ int8_t uniffi_cnd_core_fn_method_cndengine_is_catchup_available(void*_Nonnull pt
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_IS_HEALTH_CHECK_RUNNING
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_IS_HEALTH_CHECK_RUNNING
 int8_t uniffi_cnd_core_fn_method_cndengine_is_health_check_running(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_IS_RECLASSIFYING_CATEGORIES
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_IS_RECLASSIFYING_CATEGORIES
+int8_t uniffi_cnd_core_fn_method_cndengine_is_reclassifying_categories(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_LIBRARY_ADD_FOLDER
@@ -752,6 +787,11 @@ uint64_t uniffi_cnd_core_fn_method_cndengine_probe_stream(void*_Nonnull ptr, Rus
 RustBuffer uniffi_cnd_core_fn_method_cndengine_query_catalog(void*_Nonnull ptr, RustBuffer filter, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_QUERY_CATALOG_BY_TAXONOMY
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_QUERY_CATALOG_BY_TAXONOMY
+RustBuffer uniffi_cnd_core_fn_method_cndengine_query_catalog_by_taxonomy(void*_Nonnull ptr, RustBuffer filter, RustBuffer taxonomy, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_QUERY_ITEMS
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_QUERY_ITEMS
 RustBuffer uniffi_cnd_core_fn_method_cndengine_query_items(void*_Nonnull ptr, RustBuffer kind, RustBuffer query, RustBuffer group, RustBuffer host, uint32_t limit, uint32_t offset, RustCallStatus *_Nonnull out_status
@@ -760,6 +800,11 @@ RustBuffer uniffi_cnd_core_fn_method_cndengine_query_items(void*_Nonnull ptr, Ru
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_QUERY_SERIES
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_QUERY_SERIES
 RustBuffer uniffi_cnd_core_fn_method_cndengine_query_series(void*_Nonnull ptr, RustBuffer filter, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_QUERY_SERIES_BY_TAXONOMY
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_QUERY_SERIES_BY_TAXONOMY
+RustBuffer uniffi_cnd_core_fn_method_cndengine_query_series_by_taxonomy(void*_Nonnull ptr, RustBuffer filter, RustBuffer taxonomy, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_RECOMMENDATIONS_FOR
@@ -810,6 +855,11 @@ int8_t uniffi_cnd_core_fn_method_cndengine_remove_series_rule(void*_Nonnull ptr,
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_RESET_DISMISSED_RECOMMENDATIONS
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_RESET_DISMISSED_RECOMMENDATIONS
 void uniffi_cnd_core_fn_method_cndengine_reset_dismissed_recommendations(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_RESET_TAXONOMY_OVERRIDES
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_RESET_TAXONOMY_OVERRIDES
+uint32_t uniffi_cnd_core_fn_method_cndengine_reset_taxonomy_overrides(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_RESOLVE_CATCHUP_URL
@@ -872,6 +922,16 @@ void uniffi_cnd_core_fn_method_cndengine_set_custom_order(void*_Nonnull ptr, int
 void uniffi_cnd_core_fn_method_cndengine_set_recording_directory(void*_Nonnull ptr, RustBuffer dir, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_SET_TAXONOMY_GROUP_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_SET_TAXONOMY_GROUP_OVERRIDE
+void uniffi_cnd_core_fn_method_cndengine_set_taxonomy_group_override(void*_Nonnull ptr, RustBuffer group_title, RustBuffer country, RustBuffer themes, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_SET_TAXONOMY_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_SET_TAXONOMY_OVERRIDE
+void uniffi_cnd_core_fn_method_cndengine_set_taxonomy_override(void*_Nonnull ptr, RustBuffer stable_hash, RustBuffer country, RustBuffer themes, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_START_ALL_DOWNLOADS
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_START_ALL_DOWNLOADS
 uint64_t uniffi_cnd_core_fn_method_cndengine_start_all_downloads(void*_Nonnull ptr
@@ -905,6 +965,16 @@ void uniffi_cnd_core_fn_method_cndengine_subtitles_sign_out(void*_Nonnull ptr, R
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_SUBTITLES_SIGNED_IN
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_SUBTITLES_SIGNED_IN
 int8_t uniffi_cnd_core_fn_method_cndengine_subtitles_signed_in(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_TAXONOMY_OVERRIDE_SUMMARY
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_TAXONOMY_OVERRIDE_SUMMARY
+RustBuffer uniffi_cnd_core_fn_method_cndengine_taxonomy_override_summary(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_TAXONOMY_STATUS
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_TAXONOMY_STATUS
+RustBuffer uniffi_cnd_core_fn_method_cndengine_taxonomy_status(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_FN_METHOD_CNDENGINE_TOGGLE_BROKEN
@@ -1309,6 +1379,18 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_clear_logs(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_CLEAR_TAXONOMY_GROUP_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_CLEAR_TAXONOMY_GROUP_OVERRIDE
+uint16_t uniffi_cnd_core_checksum_method_cndengine_clear_taxonomy_group_override(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_CLEAR_TAXONOMY_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_CLEAR_TAXONOMY_OVERRIDE
+uint16_t uniffi_cnd_core_checksum_method_cndengine_clear_taxonomy_override(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_COMPUTE_FILE_MOVIEHASH
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_COMPUTE_FILE_MOVIEHASH
 uint16_t uniffi_cnd_core_checksum_method_cndengine_compute_file_moviehash(void
@@ -1417,6 +1499,12 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_find_mirrors(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_CATEGORY_FACETS
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_CATEGORY_FACETS
+uint16_t uniffi_cnd_core_checksum_method_cndengine_get_category_facets(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_CHANNEL_EPG
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_CHANNEL_EPG
 uint16_t uniffi_cnd_core_checksum_method_cndengine_get_channel_epg(void
@@ -1456,6 +1544,12 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_get_hosts(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_ITEM_BY_ID
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_ITEM_BY_ID
 uint16_t uniffi_cnd_core_checksum_method_cndengine_get_item_by_id(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_ITEM_TAXONOMY
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_ITEM_TAXONOMY
+uint16_t uniffi_cnd_core_checksum_method_cndengine_get_item_taxonomy(void
     
 );
 #endif
@@ -1513,6 +1607,18 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_get_stream_health_batch(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_TAXONOMY_GROUP_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_TAXONOMY_GROUP_OVERRIDE
+uint16_t uniffi_cnd_core_checksum_method_cndengine_get_taxonomy_group_override(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_TAXONOMY_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_GET_TAXONOMY_OVERRIDE
+uint16_t uniffi_cnd_core_checksum_method_cndengine_get_taxonomy_override(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_HIDE_GROUP
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_HIDE_GROUP
 uint16_t uniffi_cnd_core_checksum_method_cndengine_hide_group(void
@@ -1564,6 +1670,12 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_is_catchup_available(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_IS_HEALTH_CHECK_RUNNING
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_IS_HEALTH_CHECK_RUNNING
 uint16_t uniffi_cnd_core_checksum_method_cndengine_is_health_check_running(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_IS_RECLASSIFYING_CATEGORIES
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_IS_RECLASSIFYING_CATEGORIES
+uint16_t uniffi_cnd_core_checksum_method_cndengine_is_reclassifying_categories(void
     
 );
 #endif
@@ -1825,6 +1937,12 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_query_catalog(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_QUERY_CATALOG_BY_TAXONOMY
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_QUERY_CATALOG_BY_TAXONOMY
+uint16_t uniffi_cnd_core_checksum_method_cndengine_query_catalog_by_taxonomy(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_QUERY_ITEMS
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_QUERY_ITEMS
 uint16_t uniffi_cnd_core_checksum_method_cndengine_query_items(void
@@ -1834,6 +1952,12 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_query_items(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_QUERY_SERIES
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_QUERY_SERIES
 uint16_t uniffi_cnd_core_checksum_method_cndengine_query_series(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_QUERY_SERIES_BY_TAXONOMY
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_QUERY_SERIES_BY_TAXONOMY
+uint16_t uniffi_cnd_core_checksum_method_cndengine_query_series_by_taxonomy(void
     
 );
 #endif
@@ -1894,6 +2018,12 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_remove_series_rule(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_RESET_DISMISSED_RECOMMENDATIONS
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_RESET_DISMISSED_RECOMMENDATIONS
 uint16_t uniffi_cnd_core_checksum_method_cndengine_reset_dismissed_recommendations(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_RESET_TAXONOMY_OVERRIDES
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_RESET_TAXONOMY_OVERRIDES
+uint16_t uniffi_cnd_core_checksum_method_cndengine_reset_taxonomy_overrides(void
     
 );
 #endif
@@ -1969,6 +2099,18 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_set_recording_directory(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_SET_TAXONOMY_GROUP_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_SET_TAXONOMY_GROUP_OVERRIDE
+uint16_t uniffi_cnd_core_checksum_method_cndengine_set_taxonomy_group_override(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_SET_TAXONOMY_OVERRIDE
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_SET_TAXONOMY_OVERRIDE
+uint16_t uniffi_cnd_core_checksum_method_cndengine_set_taxonomy_override(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_START_ALL_DOWNLOADS
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_START_ALL_DOWNLOADS
 uint16_t uniffi_cnd_core_checksum_method_cndengine_start_all_downloads(void
@@ -2008,6 +2150,18 @@ uint16_t uniffi_cnd_core_checksum_method_cndengine_subtitles_sign_out(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_SUBTITLES_SIGNED_IN
 #define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_SUBTITLES_SIGNED_IN
 uint16_t uniffi_cnd_core_checksum_method_cndengine_subtitles_signed_in(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_TAXONOMY_OVERRIDE_SUMMARY
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_TAXONOMY_OVERRIDE_SUMMARY
+uint16_t uniffi_cnd_core_checksum_method_cndengine_taxonomy_override_summary(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_TAXONOMY_STATUS
+#define UNIFFI_FFIDEF_UNIFFI_CND_CORE_CHECKSUM_METHOD_CNDENGINE_TAXONOMY_STATUS
+uint16_t uniffi_cnd_core_checksum_method_cndengine_taxonomy_status(void
     
 );
 #endif

@@ -24,7 +24,11 @@ final class KidsAllowListModel {
     var kind: Kind = .live { didSet { reload() } }
     private(set) var groups: [FacetCount] = []
     private(set) var allowed: Set<String> = []
+    /// Themes of the live catalogue, for "allow a whole theme" (PRD-33 lot 33.4). Adult is never offered.
+    private(set) var themes: [CategoryFacet] = []
+    private(set) var allowedThemes: Set<String> = []
     private(set) var errorMessage: String?
+    nonisolated static let themeKind = "theme:live"
 
     init(engine: CndEngine, profile: ProfileRecord) {
         self.engine = engine
@@ -43,6 +47,17 @@ final class KidsAllowListModel {
             groups = try engine.getGroupsWithHidden(kind: kind.rawValue, sourceId: nil, includeHidden: true)
                 .filter { !engine.isAdultCategory(group: $0.value) }
             allowed = Set(try engine.listAllowedGroups(profileId: profile.id, kind: kind.rawValue))
+            if kind == .live {
+                let all = try engine.getCategoryFacets(
+                    kind: "live", axis: .theme, sourceId: nil,
+                    filter: TaxonomyFilter(country: nil, theme: nil, subtheme: nil)
+                )
+                themes = CategoryText.sortedThemes(all.filter { $0.key != "adult" && $0.key != "other" })
+                allowedThemes = Set(try engine.listAllowedGroups(profileId: profile.id, kind: Self.themeKind))
+            } else {
+                themes = []
+                allowedThemes = []
+            }
             errorMessage = nil
         } catch {
             errorMessage = userMessage(for: error)
@@ -59,6 +74,22 @@ final class KidsAllowListModel {
             } else {
                 _ = try engine.disallowGroup(profileId: profile.id, kind: kind.rawValue, group: group.value)
                 allowed.remove(Self.key(group.value))
+            }
+        } catch {
+            errorMessage = userMessage(for: error)
+        }
+    }
+
+    func isThemeAllowed(_ theme: CategoryFacet) -> Bool { allowedThemes.contains(Self.key(theme.key)) }
+
+    func setThemeAllowed(_ theme: CategoryFacet, _ on: Bool) {
+        do {
+            if on {
+                try engine.allowGroup(profileId: profile.id, kind: Self.themeKind, group: theme.key)
+                allowedThemes.insert(Self.key(theme.key))
+            } else {
+                _ = try engine.disallowGroup(profileId: profile.id, kind: Self.themeKind, group: theme.key)
+                allowedThemes.remove(Self.key(theme.key))
             }
         } catch {
             errorMessage = userMessage(for: error)
@@ -86,6 +117,23 @@ struct KidsAllowListView: View {
                 }
                 if let message = model.errorMessage {
                     Section { Label(message, systemImage: "xmark.octagon.fill").foregroundStyle(.red) }
+                }
+                if !model.themes.isEmpty {
+                    Section {
+                        ForEach(model.themes, id: \.key) { theme in
+                            Toggle(isOn: Binding(get: { model.isThemeAllowed(theme) }, set: { model.setThemeAllowed(theme, $0) })) {
+                                HStack {
+                                    Label(CategoryText.themeName(theme.key), systemImage: CategoryText.themeIcon(theme.key))
+                                    Spacer()
+                                    Text("\(theme.count)").foregroundStyle(.secondary).font(.caption)
+                                }
+                            }
+                        }
+                    } header: {
+                        Text("Thèmes")
+                    } footer: {
+                        Text("Autoriser un thème autorise toutes ses chaînes, sauf celles des catégories adultes. Le thème Adultes n'est jamais proposé.")
+                    }
                 }
                 Section {
                     HStack {

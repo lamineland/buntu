@@ -7,6 +7,14 @@ struct CategoryNavigation<Content: View>: View {
     let groups: [FacetCount]
     let totalCount: Int
     var allTitle = "Toutes les catégories"
+    /// How a key is written in the column (PRD-33: `FR` -> "🇫🇷 France"). Provider labels stay as they are.
+    var label: (String) -> String = { $0 }
+    /// SF Symbol of a key, when the column shows one (themes).
+    var icon: (String) -> String? = { _ in nil }
+    /// Pays · Thèmes · Fournisseur switch, shown above the column, the chips and in the sheet.
+    var axisPicker: AnyView? = nil
+    /// Context menu of a row (hide a country or theme, classify a provider category…).
+    var rowMenu: ((String) -> AnyView)? = nil
     @Binding var selection: String?
     @ViewBuilder var content: () -> Content
 
@@ -35,6 +43,7 @@ struct CategoryNavigation<Content: View>: View {
             HStack(spacing: 0) {
                 if wide && !collapsed {
                     VStack(spacing: 0) {
+                        if let axisPicker { axisPicker.padding(.horizontal, 8).padding(.top, 8) }
                         HStack(spacing: 0) {
                             homeButton
                             filterField
@@ -48,7 +57,10 @@ struct CategoryNavigation<Content: View>: View {
                     Divider()
                 }
                 VStack(spacing: 0) {
-                    if !wide { chips }
+                    if !wide {
+                        if let axisPicker { axisPicker.padding(.horizontal, 12).padding(.top, 8) }
+                        chips
+                    }
                     content()
                 }
             }
@@ -75,7 +87,9 @@ struct CategoryNavigation<Content: View>: View {
     private var filteredGroups: [FacetCount] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return groups }
-        return groups.filter { $0.value.localizedCaseInsensitiveContains(needle) }
+        return groups.filter {
+            $0.value.localizedCaseInsensitiveContains(needle) || label($0.value).localizedCaseInsensitiveContains(needle)
+        }
     }
 
     /// Back to the start: every category, no category filter text. Also what "all" does.
@@ -118,8 +132,7 @@ struct CategoryNavigation<Content: View>: View {
                 .tag(String?.none)
                 .onChange(of: selection) { _, newValue in if newValue == nil { query = "" } }
             ForEach(filteredGroups, id: \.value) { group in
-                Text(group.value)
-                    .lineLimit(1)
+                row(group)
                     .tag(String?.some(group.value))
             }
             #else
@@ -128,8 +141,7 @@ struct CategoryNavigation<Content: View>: View {
                 .tag(String?.none)
                 .simultaneousGesture(TapGesture().onEnded { goHome() })
             ForEach(filteredGroups, id: \.value) { group in
-                Text(group.value)
-                    .lineLimit(1)
+                row(group)
                     .badge(Int(group.count))
                     .tag(String?.some(group.value))
             }
@@ -142,9 +154,20 @@ struct CategoryNavigation<Content: View>: View {
         #endif
     }
 
+    /// One category row: a symbol when the axis has one, the label otherwise.
+    @ViewBuilder
+    private func row(_ group: FacetCount) -> some View {
+        if let symbol = icon(group.value) {
+            Label(label(group.value), systemImage: symbol).lineLimit(1).rowMenu(rowMenu, key: group.value)
+        } else {
+            Text(label(group.value)).lineLimit(1).rowMenu(rowMenu, key: group.value)
+        }
+    }
+
     private var sheet: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                if let axisPicker { axisPicker.padding(.horizontal, 12).padding(.top, 8) }
                 filterField
                 list.onChange(of: selection) { _, _ in showingSheet = false }
             }
@@ -177,7 +200,7 @@ struct CategoryNavigation<Content: View>: View {
                     HStack(spacing: 8) {
                         chip("Toutes", selected: selection == nil) { selection = nil }.id(0)
                         ForEach(Array(shown.enumerated()), id: \.element.value) { index, group in
-                            chip("\(group.value) \(group.count)", selected: selection == group.value) {
+                            chip("\(label(group.value)) \(group.count)", selected: selection == group.value) {
                                 selection = group.value
                             }
                             .id(index + 1)
@@ -223,5 +246,13 @@ struct CategoryNavigation<Content: View>: View {
                 .foregroundStyle(selected ? Color.white : Color.primary)
         }
         .buttonStyle(.plain)
+    }
+}
+
+private extension View {
+    /// Adds the row's context menu when the screen provides one.
+    @ViewBuilder
+    func rowMenu(_ menu: ((String) -> AnyView)?, key: String) -> some View {
+        if let menu { contextMenu { menu(key) } } else { self }
     }
 }

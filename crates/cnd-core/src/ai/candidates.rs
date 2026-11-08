@@ -6,6 +6,9 @@ use crate::ai::local_matcher::{
     channel_name_tokens, channels_airing, distinctive_tokens, fts_variants, significant_tokens,
 };
 use crate::db::catalog_repo::{CatalogFilter, SortField};
+use crate::db::taxonomy_repo::TaxonomyFilter;
+use crate::taxonomy::country::country_in_phrase;
+use crate::taxonomy::theme::theme_for_word;
 use crate::db::{DatabaseManager, DbError, IptvItemRecord};
 use std::collections::HashSet;
 
@@ -56,6 +59,21 @@ const LANGUAGES: &[(&str, &[&str])] = &[
     ("portugais", &["pt"]),
 ];
 
+/// Countries where a language is mostly spoken, for "en anglais" (PRD-33 lot 33.4).
+const LANGUAGE_COUNTRIES: &[(&str, &[&str])] = &[
+    ("anglais", &["GB", "US"]),
+    ("english", &["GB", "US"]),
+    ("francais", &["FR"]),
+    ("french", &["FR"]),
+    ("espagnol", &["ES", "MX"]),
+    ("spanish", &["ES", "MX"]),
+    ("allemand", &["DE", "AT"]),
+    ("german", &["DE", "AT"]),
+    ("italien", &["IT"]),
+    ("italian", &["IT"]),
+    ("portugais", &["PT", "BR"]),
+];
+
 fn aliases(table: &[(&str, &[&'static str])], token: &str) -> Vec<&'static str> {
     table
         .iter()
@@ -81,6 +99,49 @@ fn search(db: &DatabaseManager, query: &str, group: Option<&str>) -> Result<Vec<
     })
 }
 
+/// Channels of a theme in one or several countries, from the stored classification.
+fn search_taxonomy(db: &DatabaseManager, country: &str, theme: &str, subtheme: Option<&str>) -> Result<Vec<IptvItemRecord>, DbError> {
+    db.query_catalog_with(
+        &CatalogFilter {
+            kind: "live".to_string(),
+            source_id: None,
+            query: String::new(),
+            group_title: None,
+            host: None,
+            favorites_only: false,
+            include_broken: false,
+            include_hidden: false,
+            sort_by: SortField::ChannelNumber,
+            sort_asc: true,
+            limit: PER_QUERY,
+            offset: 0,
+        },
+        &TaxonomyFilter { country: Some(country.to_string()), theme: Some(theme.to_string()), subtheme: subtheme.map(str::to_string) },
+    )
+}
+
+/// "le sport en Espagne", "une chaîne d'info en anglais": a theme and a country (named, or implied by
+/// a language) together narrow the catalogue far better than words searched in a label.
+fn taxonomy_matches(db: &DatabaseManager, command: &str, words: &[String]) -> Result<Vec<IptvItemRecord>, DbError> {
+    let Some((theme, subtheme)) = words.iter().find_map(|w| theme_for_word(w)) else { return Ok(Vec::new()) };
+    let mut countries: Vec<&str> = Vec::new();
+    if let Some(code) = country_in_phrase(command) {
+        countries.push(code);
+    }
+    for word in words {
+        if let Some((_, list)) = LANGUAGE_COUNTRIES.iter().find(|(w, _)| w == word) {
+            countries.extend(list.iter());
+        }
+    }
+    let mut seen = HashSet::new();
+    countries.retain(|c| seen.insert(*c));
+    let mut out = Vec::new();
+    for country in countries {
+        out.extend(search_taxonomy(db, country, theme.as_str(), subtheme)?);
+    }
+    Ok(out)
+}
+
 fn truncate(text: &str, max: usize) -> String {
     let cleaned: String = text.chars().filter(|c| !c.is_control()).collect();
     if cleaned.chars().count() <= max {
@@ -102,6 +163,7 @@ pub fn gather(
 ) -> Result<Vec<Candidate>, DbError> {
     let words = significant_tokens(command);
     let mut pool: Vec<IptvItemRecord> = seed;
+    let seed_len = pool.len();
 
     let distinctive = distinctive_tokens(command);
     if !distinctive.is_empty() {
@@ -132,6 +194,12 @@ pub fn gather(
     queries.truncate(12);
     for query in &queries {
         pool.extend(search(db, query, None)?);
+    }
+    // A theme with a country is the narrowest request: right after what the matcher already found.
+    let narrow = taxonomy_matches(db, command, &words)?;
+    if !narrow.is_empty() {
+        let at = seed_len.min(pool.len());
+        pool.splice(at..at, narrow);
     }
     // Several words together first: they narrow the list the most.
     if words.len() > 1 {
@@ -209,6 +277,30 @@ mod tests {
         if let Some(f24) = france24 {
             assert!(bbc < f24, "topic + language narrows first");
         }
+    }
+
+    #[test]
+    fn a_theme_with_a_country_uses_the_stored_classification() {
+        let s = seed();
+        let source: i64 = s.db.with_conn(|c| Ok(c.query_row("SELECT id FROM iptv_sources LIMIT 1", [], |r| r.get(0))?)).unwrap();
+        s.db.classify_source(source).unwrap();
+        let found = gather(&s.db, "le sport en France", &ctx(None), Vec::new(), s.now).unwrap();
+        let names: Vec<&str> = found.iter().map(|c| c.item.name.as_str()).collect();
+        let first_three: Vec<&str> = names.iter().take(3).copied().collect();
+        assert_eq!(first_three, vec!["FR: Canal+ Sport", "FR: beIN Sports 1", "FR: beIN Sports 2"], "{names:?}");
+
+        let found = gather(&s.db, "une chaîne d'info en anglais", &ctx(None), Vec::new(), s.now).unwrap();
+        let names: Vec<&str> = found.iter().map(|c| c.item.name.as_str()).collect();
+        assert_eq!(names[..2], ["UK: BBC News", "US: CNN International"], "{names:?}");
+    }
+
+    #[test]
+    fn a_theme_alone_or_a_country_alone_adds_no_structured_search() {
+        let s = seed();
+        let source: i64 = s.db.with_conn(|c| Ok(c.query_row("SELECT id FROM iptv_sources LIMIT 1", [], |r| r.get(0))?)).unwrap();
+        s.db.classify_source(source).unwrap();
+        assert!(taxonomy_matches(&s.db, "du sport", &significant_tokens("du sport")).unwrap().is_empty());
+        assert!(taxonomy_matches(&s.db, "la France", &significant_tokens("la France")).unwrap().is_empty());
     }
 
     #[test]
